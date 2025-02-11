@@ -1,0 +1,495 @@
+# Instructions
+
+During your interaction with the user, if you find anything reusable in this project (e.g. version of a library, model name), especially about a fix to a mistake you made or a correction you received, you should take note in the `Lessons` section in the `.cursorrules` file so you will not make the same mistake again. 
+
+You should also use the `.cursorrules` file as a Scratchpad to organize your thoughts. Especially when you receive a new task, you should first review the content of the Scratchpad, clear old different task if necessary, first explain the task, and plan the steps you need to take to complete the task. You can use todo markers to indicate the progress, e.g.
+[X] Task 1
+[ ] Task 2
+
+Also update the progress of the task in the Scratchpad when you finish a subtask.
+Especially when you finished a milestone, it will help to improve your depth of task accomplishment to use the Scratchpad to reflect and plan.
+The goal is to help you maintain a big picture as well as the progress of the task. Always refer to the Scratchpad when you plan the next step.
+
+# Lessons
+
+## User Specified Lessons
+
+- You have a python venv in ./venv. Use it.
+- Include info useful for debugging in the program output.
+- Read the file before you try to edit it.
+- Due to Cursor's limit, when you use `git` and `gh` and need to submit a multiline commit message, first write the message in a file, and then use `git commit -F <filename>` or similar command to commit. And then remove the file. Include "[Cursor] " in the commit message and PR title.
+- Meme coins should use fungible asset standard instead of digital asset standard
+- Reference Move Spiders' fungible asset lessons for best practices
+- Focus on well-documented code over rigid quizzes
+- Allow customization of specific fields rather than entire code validation
+
+## Cursor learned
+
+- For search results, ensure proper handling of different character encodings (UTF-8) for international queries
+- Add debug information to stderr while keeping the main output clean in stdout for better pipeline integration
+- When using seaborn styles in matplotlib, use 'seaborn-v0_8' instead of 'seaborn' as the style name due to recent seaborn version changes
+- Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
+- When setting up Monaco editor with custom languages, configure the language and theme in beforeMount rather than onMount to ensure proper syntax highlighting
+- For Monaco editor read-only regions, combine decorations with onDidChangeContent event handling to properly prevent edits
+- When working with Monaco editor line numbers, always check bounds against model.getLineCount() and use Math.min() to prevent "Illegal value for lineNumber" errors
+- For Monaco editor regions, validate line numbers before creating ranges and filter out invalid regions where start > end
+- When deploying Move contracts, ensure package name is passed through all layers (UI -> API -> compilation/publishing)
+- Use consistent package names across the codebase (e.g. meme_factory for meme coins, are_you_learning for main contracts)
+- Handle package name in both compilation and publishing steps to ensure proper deployment
+- Pass package name from UI components to deployment modal to maintain flexibility
+- Ensure code editor components pass both currentCode and packageName to deployment components to maintain consistency
+
+## Move Development Lessons
+
+- Store mint_ref and transfer_ref in metadata during creation
+- Generate refs only once during object creation with constructor_ref
+- Use Object<T> for most functions instead of ConstructorRef
+- Use object::borrow to access stored refs
+- Use proper imports: fungible_asset::{Self, MintRef, TransferRef, FungibleAsset}
+- Create fungible asset before storing metadata
+- Remove unused imports to avoid compilation warnings
+- Use fungible_asset::check_ref_admin_cap for admin checks (not is_admin)
+- Use specific commit hashes (not 'mainnet') in Move.toml dependencies for stable builds
+- Check both stdout and stderr for Move compilation errors
+- Use --dev flag for development compilation to enable additional checks
+- Use --save-metadata flag to preserve metadata for testing
+- Set reasonable timeouts for Move compilation (30s default)
+- Clean up temporary compilation files in finally block
+- Use Aptos SDK instead of CLI for all operations (compilation, publishing, etc.) to avoid process execution issues and improve type safety
+- Keep Move compilation separate from deployment for better error handling
+- Keep package publishing configuration in a separate config file for easier management
+- Keep path resolution consistent between compile and publish tasks to avoid file not found errors
+- Keep Move source files in the package's sources directory, don't use temporary directories for compilation
+- When publishing Move packages, use --named-addresses to resolve placeholder addresses with actual account addresses
+- Initialize template code files at server startup to ensure users always have a starting point
+- Handle different address output formats from Aptos CLI (at address:, by account, to)
+- Use temporary directory for compilation and only update source file after successful compilation
+- When compiling, send the current editor code to the server instead of reading from file to prevent code loss
+- Use Aptos SDK's Move.buildPublishPayload for compilation instead of CLI to avoid process execution issues
+- When using Move.buildPublishPayload, ensure outputFile path exists and is writable
+- When publishing packages, use SDK's publishPackageTransaction and waitForTransaction for reliable deployment
+- Keep track of transaction hash from publish response to monitor deployment status
+- Use SDK's Network enum to properly handle different network configurations
+- Use Ed25519PrivateKey for proper key handling in the SDK
+- When using named addresses in Move compilation, ensure addresses are padded to 64 characters (e.g. '42'.padStart(64, '0'))
+- Handle address padding consistently across compilation and deployment
+
+## Aptos SDK Lessons
+
+- Use `@aptos-labs/ts-sdk` instead of deprecated `aptos` package
+- Create accounts with `Ed25519PrivateKey` for proper key handling
+- Access account address with `account.accountAddress.toString()`
+- Use `Network` enum for network configuration
+- Initialize SDK with `AptosConfig` and proper network settings
+- Accept type compatibility issues between ESM and CommonJS AccountAddress types when using Move CLI functions
+- Use @ts-ignore for Move CLI functions that have ESM/CommonJS type mismatches
+- Prioritize functional correctness over TypeScript type perfection when dealing with SDK module differences
+- Keep track of which SDK functions use ESM vs CommonJS types to handle type assertions appropriately
+
+# Scratchpad
+
+## Project: Interactive Aptos dApp Learning Platform
+
+### Current Focus: Specialized Contract Deployment Pages
+
+#### MintPage
+- Dedicated interface for meme coin deployment
+- Uses meme_factory package and meme_coin.move template
+- Provides guided experience for FA-based meme coins
+- Includes:
+  - Code editor with template
+  - Network selection
+  - Deployment status tracking
+  - Explorer integration
+
+#### DeployPage
+- Generic contract deployment interface
+- Uses are_you_learning package
+- For deploying other types of contracts
+- More flexible/general purpose
+
+### Implementation Status
+[X] Core Deployment Flow
+    - Compilation
+    - Package publishing
+    - Network handling
+    - Status tracking
+
+[X] Meme Coin Specifics
+    - FA standard integration
+    - Meme factory package
+    - Template loading
+    - Explorer integration
+
+[X] Type System Handling
+    - Accept ESM/CommonJS type mismatches
+    - Use @ts-ignore where necessary
+    - Document type compatibility decisions
+
+[ ] Upcoming Improvements
+    - Add template customization
+    - Enhance error messages
+    - Add contract verification
+    - Improve deployment feedback
+
+### Current Focus: Simplified Single-Contract Approach
+
+#### Core Philosophy
+- One well-documented contract with all features
+- Clear sections in documentation
+- Editable regions for customization
+- Progressive feature introduction
+
+#### Implementation Plan
+[X] 1. Core Features (Completed)
+    - Basic metadata
+    - Minting functionality
+    - Supply management
+    - Security controls
+
+[ ] 2. Documentation Structure
+    - [X] Basic fungible asset concepts
+    - [ ] Supply management guide
+    - [ ] Security features guide
+    - [ ] Advanced features guide
+
+[ ] 3. Editor Experience
+    - [X] Set up editable regions
+    - [ ] Add hover documentation
+    - [ ] Improve visual indicators
+
+Next Steps:
+1. Enhance documentation for each feature section
+2. Add more examples and use cases
+3. Improve editor visualization of features
+
+### Current Task: Update Meme Coin Based on Launchpad Example
+
+### Key Changes Needed
+[X] 1. Analyze launchpad.move for correct syntax patterns
+    - Registry pattern for tracking all meme coins
+    - Config pattern for admin management
+    - Event handling
+    - Primary store integration
+
+[ ] 2. Adapt Meme Coin Features
+    - Keep core FA functionality from launchpad
+    - Add degen metrics (moon score, rug risk)
+    - Add holder rewards
+    - Add security controls
+
+[ ] 3. Implementation Steps
+    - Update struct definitions
+    - Update events
+    - Update core FA functions
+    - Add degen-specific functions
+    - Add security functions
+
+### Correct Patterns to Keep
+- Primary store enabled FA creation
+- Constructor ref handling
+- Admin capability checks
+- Event emission
+- Registry tracking
+
+### Degen Features to Add
+- Moon score (0-100)
+- Rug risk score (0-100)
+- Holder rewards
+- Emergency controls
+
+### Current Focus
+Validating the interactive learning experience with the minting page example before expanding to more complex use cases.
+
+## Current Task: Implement Contract Deployment Flow
+
+### Implementation Plan
+[X] 1. Backend Setup
+    - Create publish task for Move package deployment
+    - Add deployment endpoint to Vite server
+    - Handle deployment response and address extraction
+
+[X] 2. Frontend Components
+    - Create ContractDeployment modal component
+    - Add deployment status display
+    - Add Aptos Explorer link for deployed contracts
+
+[X] 3. Integration
+    - Connect frontend with backend
+    - Add proper error handling
+    - Add deployment success feedback
+
+[X] 4. Type System Resolution
+    - Document ESM/CommonJS compatibility issues
+    - Accept type mismatches with @ts-ignore
+    - Prioritize functional deployment over type perfection
+
+### Next Steps
+1. Test the deployment flow
+2. Add environment variables for configuration
+3. Add loading states and better error messages
+4. Add network-specific configuration
+5. Add contract verification support
+
+### Key Features Added
+- Network selection dropdown (devnet/testnet/mainnet)
+- Private key input with security warning
+- Compilation and deployment status tracking
+- Success message with explorer link
+- Error handling with clear messages
+- Code editor with Move syntax highlighting
+
+### Security Measures Implemented
+- Private key input as password field
+- Clear warning about private key security
+- No storage of sensitive data
+- Input validation before deployment
+- Network selection validation
+
+## Current Task: Move Contract Component Modularization
+
+### Goal
+Create a set of modular, embeddable components for Move contract development that can be easily integrated into other sites.
+
+### Architecture Plan
+
+#### 1. Core Components to Modularize
+[ ] Contract Editor Component
+    - Monaco editor with Move syntax
+    - Template system
+    - Validation layer
+    - Customizable read-only regions
+    - Event emitters for code changes
+
+[ ] Contract Deployment Component
+    - Network selection
+    - Wallet connection
+    - Deployment status
+    - Transaction tracking
+    - Event emitters for deployment states
+
+[ ] Contract Interaction Component
+    - Function caller interface
+    - Transaction builder
+    - Response formatter
+    - Event emitters for interactions
+
+#### 2. Standardized Interfaces
+[ ] Input Interfaces
+    - Contract template configuration
+    - Network configuration
+    - Wallet configuration
+    - Deployment options
+    - Function call parameters
+
+[ ] Output Interfaces
+    - Compilation results
+    - Deployment status
+    - Transaction results
+    - Error messages
+    - Event system
+
+#### 3. Integration Layer
+[ ] Component Communication
+    - Event system for inter-component communication
+    - State management interface
+    - Error handling protocol
+    - Loading state management
+
+[ ] External Integration
+    - NPM package structure
+    - Documentation
+    - Example integrations
+    - TypeScript types
+
+### Implementation Approach
+1. Extract current functionality into isolated components
+2. Define clear interfaces for each component
+3. Create standardized event system
+4. Build integration examples
+5. Package for distribution
+
+### Key Design Principles
+- Self-contained components
+- Clear separation of concerns
+- Standardized input/output
+- Flexible configuration
+- Comprehensive event system
+- TypeScript-first approach
+- Minimal dependencies
+
+### Next Steps
+1. Audit current codebase for modularization opportunities
+2. Define component boundaries
+3. Create interface specifications
+4. Build proof-of-concept components
+5. Test integration scenarios
+
+### Customization Options
+
+#### 1. Contract Template System
+[ ] Template Engine
+    - Predefined contract templates (FA, NFT, Governance, etc.)
+    - Custom template loading
+    - Template variables and placeholders
+    - Template validation rules
+    - Template documentation integration
+
+[ ] Editor Customization
+    - Configurable read-only regions
+    - Custom syntax highlighting rules
+    - Customizable code snippets
+    - Custom validation rules
+    - Custom error messages
+    - Custom documentation hover
+    - Custom code completion
+
+#### 2. UI/UX Customization
+[ ] Visual Theming
+    - Custom color schemes
+    - Custom component styling
+    - Custom icons and branding
+    - Custom layout options
+    - Responsive design options
+
+[ ] Interaction Patterns
+    - Custom deployment flow
+    - Custom validation steps
+    - Custom error handling
+    - Custom success flows
+    - Custom loading states
+    - Custom tooltips and help text
+
+#### 3. Contract-Specific Features
+[ ] Validation Rules
+    - Custom contract validation rules
+    - Custom type checking
+    - Custom security checks
+    - Custom best practice enforcement
+    - Custom gas optimization hints
+
+[ ] Integration Points
+    - Custom blockchain networks
+    - Custom wallet integrations
+    - Custom transaction builders
+    - Custom event handlers
+    - Custom analytics integration
+
+#### 4. Development Experience
+[ ] Developer Tools
+    - Custom debug information
+    - Custom error reporting
+    - Custom testing framework
+    - Custom documentation generation
+    - Custom code generation
+
+[ ] IDE Integration
+    - Custom VS Code extensions
+    - Custom editor commands
+    - Custom keybindings
+    - Custom snippets
+    - Custom language server features
+
+#### 5. Learning Experience
+[ ] Educational Features
+    - Interactive tutorials
+    - Step-by-step guides
+    - Code explanations
+    - Best practice hints
+    - Common pitfall warnings
+    - Security recommendations
+
+#### 6. UI Visualization & Interaction Layer
+[ ] Live Contract Preview
+    - Real-time UI preview of contract functionality
+    - Interactive demo environment
+    - Live data from deployed contract
+    - Visual representation of contract state
+    - Interactive transaction simulation
+
+[ ] Contract-UI Binding
+    - Automatic UI generation from contract interface
+    - Two-way binding between UI and contract state
+    - Event-driven UI updates
+    - Transaction status visualization
+    - State change animations
+
+[ ] Interactive Documentation
+    - Visual flow diagrams
+    - Interactive state transitions
+    - Live code examples
+    - Real-time contract interaction
+    - Visual debugging tools
+
+[ ] Demo Environment
+    - Sandbox testing environment
+    - Mock data generation
+    - Transaction simulation
+    - State manipulation tools
+    - Time-travel debugging
+
+[ ] Integration Examples
+    - Sample dApp templates
+    - Common UI patterns
+    - Best practice implementations
+    - Responsive layouts
+    - Mobile-first designs
+
+[ ] Analytics & Monitoring
+    - Contract usage metrics
+    - Transaction history visualization
+    - Gas usage tracking
+    - Performance monitoring
+    - User interaction analytics
+
+### Implementation Flow
+1. Contract Development
+   - Write and customize contract
+   - Set validation rules
+   - Define interaction points
+
+2. UI Generation
+   - Auto-generate UI scaffolding
+   - Customize UI components
+   - Add interactive elements
+
+3. Integration Layer
+   - Connect contract events to UI
+   - Set up state management
+   - Configure analytics
+
+4. Preview & Testing
+   - Live preview environment
+   - Interactive testing
+   - State visualization
+
+5. Production Deployment
+   - Contract deployment
+   - UI deployment
+   - Analytics integration
+
+### Implementation Priorities
+1. Core Template System
+   - Basic template engine
+   - Essential customization points
+   - Standard validation rules
+
+2. UI Framework
+   - Theme system
+   - Layout components
+   - Basic styling options
+
+3. Contract Features
+   - Network configuration
+   - Basic validation rules
+   - Standard security checks
+
+4. Developer Tools
+   - Basic debugging
+   - Error reporting
+   - Documentation
+
+5. Educational Layer
+   - Basic tutorials
+   - Code explanations
+   - Security guidelines

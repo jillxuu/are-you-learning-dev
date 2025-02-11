@@ -1,0 +1,10 @@
+/move/build
+
+.aptos
+
+aptos-build
+explorer
+workspace
+aptos-shepherd
+
+.cursorrules
