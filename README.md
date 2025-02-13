@@ -14,7 +14,6 @@ An interactive learning platform for Aptos Move development, featuring a worksho
 ## Prerequisites
 
 - Node.js (v18 or higher)
-- pnpm (for frontend package management)
 - npm (for backend package management)
 - Aptos CLI (for Move contract development)
 
@@ -55,29 +54,19 @@ An interactive learning platform for Aptos Move development, featuring a worksho
 
 2. Install dependencies:
    ```bash
-   pnpm install
+   npm install
    ```
 
-3. Authenticate with Google Artifact Registry:
-    ```shell
-    gcloud auth login --update-adc
-    ```
-
-    Once authenticated, run the below to authenticate against the private registry itself:
-    ```shell
-    pnpm artifactregistry-login
-    ```
-
-4. Create a `.env` file based on `.env.example`:
+3. Create a `.env` file based on `.env.example`:
    ```bash
    cp .env.example .env
    ```
    Configure the following variables:
    - `VITE_APTOS_NODE_URL`: Aptos node URL
 
-5. Start the development server:
+4. Start the development server:
    ```bash
-   pnpm dev
+   npm run dev
    ```
 
 The application will be available at `http://localhost:5173`

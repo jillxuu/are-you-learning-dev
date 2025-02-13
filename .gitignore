@@ -47,3 +47,4 @@ aptos-shepherd
 # Upload directories
 /backend/uploads/*
 !/backend/uploads/.gitkeep
+.vercel

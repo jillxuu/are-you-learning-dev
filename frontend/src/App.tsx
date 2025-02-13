@@ -17,7 +17,6 @@ import CodePlaygroundView from "./components/CodePlaygroundView";
 import ContractDeployment from "./components/ContractDeployment";
 import ModulesPage from "./pages/Modules";
 import ModuleExplorer from "./pages/ModuleExplorer";
-import ProcessorPage from "./pages/ProcessorPage";
 import WorkshopsPage from "./features/workshops/pages/WorkshopsPage";
 
 const THEMES = [
@@ -162,9 +161,6 @@ function App() {
           <a className="btn btn-ghost" onClick={() => navigate("/explorer")}>
             Contract Exploring
           </a>
-          <a className="btn btn-ghost" onClick={() => navigate("/processor")}>
-            Data Processing
-          </a>
         </div>
         <div className="navbar-end">
           <div className="dropdown dropdown-end">
@@ -210,7 +206,6 @@ function App() {
           <Route path="/workshops/:workshopId" element={<WorkshopsPage />} />
           <Route path="/modules" element={<ModulesPage />} />
           <Route path="/modules/:address/code" element={<ModuleExplorer />} />
-          <Route path="/processor" element={<ProcessorPage />} />
           <Route
             path="/learn"
             element={
