@@ -1,7 +1,7 @@
-import { Network, AccountAddress, MoveResource } from '@aptos-labs/ts-sdk';
-import { useQuery, UseQueryResult } from '@tanstack/react-query';
-import { getAptosClient } from '../api/client';
-import { orderBy } from 'lodash';
+import { Network, AccountAddress, MoveResource } from "@aptos-labs/ts-sdk";
+import { useQuery, UseQueryResult } from "@tanstack/react-query";
+import { getAptosClient } from "../api/client";
+import { orderBy } from "lodash";
 
 export type ModuleMetadata = {
   name: string;
@@ -40,12 +40,12 @@ export function useGetAccountResource(
   const client = getAptosClient(Network.DEVNET);
 
   return useQuery<MoveResource, ResponseError>({
-    queryKey: ["accountResource", {address, resource}],
+    queryKey: ["accountResource", { address, resource }],
     queryFn: async () => {
       const accountAddress = AccountAddress.from(address);
       return await client.getAccountResource({
         accountAddress,
-        resourceType: resource
+        resourceType: resource,
       });
     },
     refetchOnWindowFocus: false,
@@ -74,7 +74,7 @@ export type RegistryData = {
 };
 
 export function useGetAccountPackages(address: string) {
-  const {data: registry} = useGetAccountResource(
+  const { data: registry } = useGetAccountResource(
     address,
     "0x1::code::PackageRegistry" as `${string}::${string}::${string}`,
   );
@@ -82,29 +82,26 @@ export function useGetAccountPackages(address: string) {
   const registryData = registry as unknown as RegistryData;
 
   if (!registryData || !registryData.packages) {
-    console.log("No packages in registry data");
     return [];
   }
 
   // Transform the data to match our PackageMetadata type
-  const packages: PackageMetadata[] = registryData.packages.map((pkg): PackageMetadata => {
-    console.log("Processing package:", pkg.name);
-    return {
-      name: pkg.name,
-      modules: pkg.modules.map(module => ({
+  const packages: PackageMetadata[] = registryData.packages.map(
+    (pkg): PackageMetadata => {
+      return {
+        name: pkg.name,
+        modules: pkg.modules.map((module) => ({
           name: module.name,
-        // Use bytecode as source since that's what we have
-        source: module.bytecode
-      })),
-      upgrade_policy: pkg.upgrade_policy,
-      upgrade_number: pkg.upgrade_number,
-      source_digest: pkg.source_digest,
-      manifest: pkg.manifest,
-    };
-  });
+          // Use bytecode as source since that's what we have
+          source: module.bytecode,
+        })),
+        upgrade_policy: pkg.upgrade_policy,
+        upgrade_number: pkg.upgrade_number,
+        source_digest: pkg.source_digest,
+        manifest: pkg.manifest,
+      };
+    },
+  );
 
-  console.log("Processed packages:", packages);
-  const sortedPackages = orderBy(packages, "name");
-  console.log("Sorted packages:", sortedPackages);
-  return sortedPackages;
+  return orderBy(packages, "name");
 }

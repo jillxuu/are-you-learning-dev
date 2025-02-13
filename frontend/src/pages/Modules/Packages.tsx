@@ -63,40 +63,40 @@ export default function Packages({ address, network, moduleName }: Props) {
 
     async function fetchModules() {
       if (!mounted) return;
-      
+
       try {
         setLoading(true);
         setError(null);
 
         const client = getAptosClient(network);
         const modules = await client.getAccountModules({
-          accountAddress: address
+          accountAddress: address,
         });
 
         if (!mounted) return;
 
         // Transform modules into package format
         const packageMetadata: PackageMetadata = {
-          name: 'meme_coin',
-          modules: modules.map(module => ({
-            name: module.abi?.name || '',
-            source: module.bytecode || '',
-            abi: module.abi
+          name: "meme_coin",
+          modules: modules.map((module) => ({
+            name: module.abi?.name || "",
+            source: module.bytecode || "",
+            abi: module.abi,
           })),
           upgrade_policy: {
-            policy: 1 // Compatible by default
+            policy: 1, // Compatible by default
           },
           upgrade_number: 1,
-          source_digest: '',
-          manifest: JSON.stringify(modules, null, 2)
+          source_digest: "",
+          manifest: JSON.stringify(modules, null, 2),
         };
 
         setPackages([packageMetadata]);
       } catch (err) {
         if (!mounted) return;
-        
-        console.error('Failed to load modules:', err);
-        setError('Failed to load modules. Please try again.');
+
+        console.error("Failed to load modules:", err);
+        setError("Failed to load modules. Please try again.");
       } finally {
         if (mounted) {
           setLoading(false);
@@ -105,7 +105,9 @@ export default function Packages({ address, network, moduleName }: Props) {
     }
 
     fetchModules();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [address, network]);
 
   useEffect(() => {
@@ -187,7 +189,10 @@ function PackagesSidebar({
   const flattedModules = useMemo(
     () =>
       sortedPackages.flatMap((pkg) =>
-        pkg.modules.map((module: ModuleMetadata) => ({...module, pkg: pkg.name})),
+        pkg.modules.map((module: ModuleMetadata) => ({
+          ...module,
+          pkg: pkg.name,
+        })),
       ),
     [sortedPackages],
   );
@@ -199,7 +204,7 @@ function PackagesSidebar({
           <div key={pkg.name}>
             <button
               className={`btn btn-ghost w-full justify-start ${
-                pkg.name === selectedPackageName ? 'btn-active' : ''
+                pkg.name === selectedPackageName ? "btn-active" : ""
               }`}
               onClick={() => navigateToPackage(pkg.name)}
             >
@@ -229,7 +234,7 @@ function PackageContent({
       <div className="space-y-6">
         <div>
           <h3 className="text-lg font-semibold mb-2">Modules</h3>
-          <select 
+          <select
             className="select select-bordered w-full"
             defaultValue={packageMetadata.modules[0]?.name}
             onChange={(e) => {

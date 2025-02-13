@@ -1,24 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import Contract from './Contract';
-import Tabs from './Tabs';
-import ViewCode from './ViewCode';
-import Packages from './Packages';
-import { Network, Aptos, AptosConfig, AccountAddress, MoveModuleBytecode } from '@aptos-labs/ts-sdk';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import Contract from "./Contract";
+import ViewCode from "./ViewCode";
+import Packages from "./Packages";
+import {
+  Network,
+  Aptos,
+  AptosConfig,
+  AccountAddress,
+  MoveModuleBytecode,
+} from "@aptos-labs/ts-sdk";
 
 interface Props {
   contractAddress?: string;
   network?: Network;
 }
 
-export default function ModulesPage({ contractAddress, network = Network.DEVNET }: Props) {
+export default function ModulesPage({
+  contractAddress,
+  network = Network.DEVNET,
+}: Props) {
   const navigate = useNavigate();
   const { address, view, selectedModuleName } = useParams();
   const [modules, setModules] = useState<MoveModuleBytecode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('code');
-  const [moduleSource, setModuleSource] = useState<string>('');
+  const [activeTab, setActiveTab] = useState("code");
+  const [moduleSource, setModuleSource] = useState<string>("");
 
   useEffect(() => {
     const fetchModules = async () => {
@@ -28,10 +36,10 @@ export default function ModulesPage({ contractAddress, network = Network.DEVNET 
 
         const config = new AptosConfig({ network });
         const client = new Aptos(config);
-        
+
         const addr = contractAddress || address;
         if (!addr) {
-          throw new Error('No contract address provided');
+          throw new Error("No contract address provided");
         }
 
         const accountAddress = AccountAddress.from(addr);
@@ -39,12 +47,18 @@ export default function ModulesPage({ contractAddress, network = Network.DEVNET 
         setModules(modulesList);
 
         // If no module is selected and we have modules, select the first one
-        if (!selectedModuleName && modulesList.length > 0 && modulesList[0].abi?.name) {
+        if (
+          !selectedModuleName &&
+          modulesList.length > 0 &&
+          modulesList[0].abi?.name
+        ) {
           navigate(`/modules/${addr}/code/${modulesList[0].abi.name}`);
         }
       } catch (err) {
-        console.error('Failed to fetch modules:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch modules');
+        console.error("Failed to fetch modules:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch modules",
+        );
       } finally {
         setLoading(false);
       }
@@ -100,35 +114,43 @@ export default function ModulesPage({ contractAddress, network = Network.DEVNET 
     }
 
     switch (activeTab) {
-      case 'code':
-        return <ViewCode 
-          address={address || ''} 
-          network={network} 
-          moduleName={selectedModuleName}
-          onSourceUpdate={setModuleSource}
-        />;
-      case 'entry-functions':
-        return <Contract 
-          address={address || ''} 
-          network={network} 
-          isRead={false} 
-          moduleName={selectedModuleName}
-          sourceCode={moduleSource}
-        />;
-      case 'view-functions':
-        return <Contract 
-          address={address || ''} 
-          network={network} 
-          isRead={true} 
-          moduleName={selectedModuleName}
-          sourceCode={moduleSource}
-        />;
-      case 'resources':
-        return <Packages 
-          address={address || ''} 
-          network={network} 
-          moduleName={selectedModuleName}
-        />;
+      case "code":
+        return (
+          <ViewCode
+            address={address || ""}
+            network={network}
+            moduleName={selectedModuleName}
+            onSourceUpdate={setModuleSource}
+          />
+        );
+      case "entry-functions":
+        return (
+          <Contract
+            address={address || ""}
+            network={network}
+            isRead={false}
+            moduleName={selectedModuleName}
+            sourceCode={moduleSource}
+          />
+        );
+      case "view-functions":
+        return (
+          <Contract
+            address={address || ""}
+            network={network}
+            isRead={true}
+            moduleName={selectedModuleName}
+            sourceCode={moduleSource}
+          />
+        );
+      case "resources":
+        return (
+          <Packages
+            address={address || ""}
+            network={network}
+            moduleName={selectedModuleName}
+          />
+        );
       default:
         return null;
     }
@@ -151,21 +173,28 @@ export default function ModulesPage({ contractAddress, network = Network.DEVNET 
               }}
               title="Copy address"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
                 <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
                 <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
               </svg>
             </button>
           </div>
         )}
-        <select 
+        <select
           className="select select-bordered w-full max-w-xs"
-          value={selectedModuleName || ''}
+          value={selectedModuleName || ""}
           onChange={(e) => handleModuleChange(e.target.value)}
         >
           <option value="">Select a module</option>
-          {modules.map(module => (
-            <option key={module.abi?.name} value={module.abi?.name}>{module.abi?.name}</option>
+          {modules.map((module) => (
+            <option key={module.abi?.name} value={module.abi?.name}>
+              {module.abi?.name}
+            </option>
           ))}
         </select>
       </div>
@@ -177,27 +206,27 @@ export default function ModulesPage({ contractAddress, network = Network.DEVNET 
           </div>
 
           <div className="nav-tabs mb-4">
-            <button 
-              className={`nav-tab ${activeTab === 'code' ? 'active' : ''}`}
-              onClick={() => handleTabChange('code')}
+            <button
+              className={`nav-tab ${activeTab === "code" ? "active" : ""}`}
+              onClick={() => handleTabChange("code")}
             >
               Source Code
             </button>
-            <button 
-              className={`nav-tab ${activeTab === 'entry-functions' ? 'active' : ''}`}
-              onClick={() => handleTabChange('entry-functions')}
+            <button
+              className={`nav-tab ${activeTab === "entry-functions" ? "active" : ""}`}
+              onClick={() => handleTabChange("entry-functions")}
             >
               Entry Functions
             </button>
-            <button 
-              className={`nav-tab ${activeTab === 'view-functions' ? 'active' : ''}`}
-              onClick={() => handleTabChange('view-functions')}
+            <button
+              className={`nav-tab ${activeTab === "view-functions" ? "active" : ""}`}
+              onClick={() => handleTabChange("view-functions")}
             >
               View Functions
             </button>
-            <button 
-              className={`nav-tab ${activeTab === 'resources' ? 'active' : ''}`}
-              onClick={() => handleTabChange('resources')}
+            <button
+              className={`nav-tab ${activeTab === "resources" ? "active" : ""}`}
+              onClick={() => handleTabChange("resources")}
             >
               Resources
             </button>
@@ -211,4 +240,4 @@ export default function ModulesPage({ contractAddress, network = Network.DEVNET 
       )}
     </div>
   );
-} 
+}

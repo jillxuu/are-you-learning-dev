@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Network, AptosConfig } from '@aptos-labs/ts-sdk';
-import { useContract } from '../hooks/useContract';
+import React, { useState, useEffect } from "react";
+import { Network, AptosConfig } from "@aptos-labs/ts-sdk";
+import { useContract } from "../hooks/useContract";
 
 interface Props {
   contractAddress?: string;
@@ -32,21 +32,27 @@ interface ModuleInfo {
   };
 }
 
-export default function ContractExplorer({ contractAddress: initialAddress, network = Network.DEVNET }: Props) {
-  const [address, setAddress] = useState(initialAddress || '');
-  const [selectedFunction, setSelectedFunction] = useState<string>('');
+export default function ContractExplorer({
+  contractAddress: initialAddress,
+  network = Network.DEVNET,
+}: Props) {
+  const [address, setAddress] = useState(initialAddress || "");
+  const [selectedFunction, setSelectedFunction] = useState<string>("");
   const [functionParams, setFunctionParams] = useState<string[]>([]);
-  const [result, setResult] = useState<string>('');
-  const [privateKey, setPrivateKey] = useState<string>('');
-  const [functions, setFunctions] = useState<{[key: string]: FunctionInfo}>({});
-  const [moduleName, setModuleName] = useState('meme_coin');
+  const [result, setResult] = useState<string>("");
+  const [privateKey, setPrivateKey] = useState<string>("");
+  const [functions, setFunctions] = useState<{ [key: string]: FunctionInfo }>(
+    {},
+  );
+  const [moduleName, setModuleName] = useState("meme_coin");
   const [moduleInfo, setModuleInfo] = useState<ModuleInfo | null>(null);
 
-  const { loading, error, callViewFunction, callFunction, getModule } = useContract({
-    network,
-    address,
-    moduleName
-  });
+  const { loading, error, callViewFunction, callFunction, getModule } =
+    useContract({
+      network,
+      address,
+      moduleName,
+    });
 
   useEffect(() => {
     if (initialAddress) {
@@ -67,34 +73,39 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
       setModuleInfo(moduleInfo);
       if (moduleInfo.abi) {
         // Extract functions from module ABI
-        const exposedFunctions = moduleInfo.abi.exposed_functions.reduce((acc: {[key: string]: FunctionInfo}, func: ModuleFunction) => {
-          acc[func.name] = {
-            name: func.name,
-            visibility: func.visibility,
-            isEntry: func.is_entry,
-            genericTypeParams: func.generic_type_params,
-            params: func.params,
-            return: func.return
-          };
-          return acc;
-        }, {});
+        const exposedFunctions = moduleInfo.abi.exposed_functions.reduce(
+          (acc: { [key: string]: FunctionInfo }, func: ModuleFunction) => {
+            acc[func.name] = {
+              name: func.name,
+              visibility: func.visibility,
+              isEntry: func.is_entry,
+              genericTypeParams: func.generic_type_params,
+              params: func.params,
+              return: func.return,
+            };
+            return acc;
+          },
+          {},
+        );
         setFunctions(exposedFunctions);
       }
     } catch (err) {
-      console.error('Failed to load module info:', err);
+      console.error("Failed to load module info:", err);
     }
   };
 
   const handleFunctionSelect = (funcName: string) => {
     setSelectedFunction(funcName);
     setFunctionParams([]);
-    setResult('');
+    setResult("");
 
     const func = functions[funcName];
     if (func) {
       // Skip signer parameter for entry functions
-      const paramCount = func.isEntry ? func.params.length - 1 : func.params.length;
-      setFunctionParams(new Array(paramCount).fill(''));
+      const paramCount = func.isEntry
+        ? func.params.length - 1
+        : func.params.length;
+      setFunctionParams(new Array(paramCount).fill(""));
     }
   };
 
@@ -106,7 +117,7 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
 
   const executeFunction = async () => {
     if (!selectedFunction) return;
-    
+
     try {
       const func = functions[selectedFunction];
       if (!func) return;
@@ -114,16 +125,26 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
       let response;
       if (func.isEntry) {
         if (!privateKey) {
-          throw new Error('Private key is required for entry functions');
+          throw new Error("Private key is required for entry functions");
         }
-        response = await callFunction(selectedFunction, privateKey, functionParams);
+        response = await callFunction(
+          selectedFunction,
+          privateKey,
+          functionParams,
+        );
       } else {
         response = await callViewFunction(selectedFunction, functionParams);
       }
       setResult(JSON.stringify(response, null, 2));
     } catch (err) {
-      console.error('Function execution error:', err);
-      setResult(JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }, null, 2));
+      console.error("Function execution error:", err);
+      setResult(
+        JSON.stringify(
+          { error: err instanceof Error ? err.message : "Unknown error" },
+          null,
+          2,
+        ),
+      );
     }
   };
 
@@ -132,7 +153,7 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
       <div className="card bg-base-200 shadow-xl">
         <div className="card-body">
           <h2 className="card-title">Contract Explorer</h2>
-          
+
           {/* Contract Address Input */}
           <div className="form-control">
             <label className="label">
@@ -166,7 +187,7 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
             <label className="label">
               <span className="label-text">Select Function</span>
             </label>
-            <select 
+            <select
               className="select select-bordered w-full"
               value={selectedFunction}
               onChange={(e) => handleFunctionSelect(e.target.value)}
@@ -177,7 +198,8 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
                   .filter(([_, func]) => !func.isEntry)
                   .map(([name, func]) => (
                     <option key={name} value={name}>
-                      {name} ({func.params.join(', ')}) → {func.return.join(', ')}
+                      {name} ({func.params.join(", ")}) →{" "}
+                      {func.return.join(", ")}
                     </option>
                   ))}
               </optgroup>
@@ -186,7 +208,7 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
                   .filter(([_, func]) => func.isEntry)
                   .map(([name, func]) => (
                     <option key={name} value={name}>
-                      {name} ({func.params.slice(1).join(', ')})
+                      {name} ({func.params.slice(1).join(", ")})
                     </option>
                   ))}
               </optgroup>
@@ -197,7 +219,9 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
           {selectedFunction && functions[selectedFunction]?.isEntry && (
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Private Key (required for entry functions)</span>
+                <span className="label-text">
+                  Private Key (required for entry functions)
+                </span>
               </label>
               <input
                 type="password"
@@ -218,24 +242,26 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
                 .map((param, index) => (
                   <div key={index} className="form-control">
                     <label className="label">
-                      <span className="label-text">Parameter {index + 1}: {param}</span>
+                      <span className="label-text">
+                        Parameter {index + 1}: {param}
+                      </span>
                     </label>
                     <input
                       type="text"
                       className="input input-bordered"
-                      value={functionParams[index] || ''}
+                      value={functionParams[index] || ""}
                       onChange={(e) => handleParamChange(index, e.target.value)}
                       placeholder={`Enter ${param}...`}
                     />
                   </div>
                 ))}
-              
+
               <button
-                className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
+                className={`btn btn-primary w-full ${loading ? "loading" : ""}`}
                 onClick={executeFunction}
                 disabled={loading}
               >
-                {loading ? 'Executing...' : 'Execute Function'}
+                {loading ? "Executing..." : "Execute Function"}
               </button>
             </div>
           )}
@@ -246,7 +272,7 @@ export default function ContractExplorer({ contractAddress: initialAddress, netw
               <span>{error.message}</span>
             </div>
           )}
-          
+
           {/* Result Display */}
           {result && (
             <div className="mt-4">

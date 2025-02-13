@@ -1,22 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Network } from '@aptos-labs/ts-sdk';
+import { useState, useEffect } from "react";
 import { createPlatformAdminApiClient } from "@aptos-internal/aptos-shepherd-platform-client";
-import { SHEPHERD_API_URL, getHeaders } from '../config';
-import type { 
-  GetSpecs, 
+import { SHEPHERD_API_URL, getHeaders } from "../config";
+import type {
+  GetSpecs,
   InstanceStatus,
-  GetInstanceResponse,
   SpecIdentifierArgs,
   CommonInstanceConfig,
   InstanceAndSpec,
-  DbStatus,
-  ProcessorStatus,
-  ApiStatus,
-  RouteStatus,
-  OverallStatus
-} from '@aptos-internal/aptos-shepherd-platform-client';
-import EventSelection from '../components/EventSelection';
-import RemappingConfiguration from '../components/RemappingConfiguration';
+} from "@aptos-internal/aptos-shepherd-platform-client";
+import EventSelection from "../components/EventSelection";
+import RemappingConfiguration from "../components/RemappingConfiguration";
 
 // Configuration store to manage state across tabs
 interface ConfigState {
@@ -26,24 +19,30 @@ interface ConfigState {
 }
 
 const ProcessorPage = () => {
-  const [contractAddress, setContractAddress] = useState('');
+  const [contractAddress, setContractAddress] = useState("");
   const [selectedSpec, setSelectedSpec] = useState<GetSpecs | null>(null);
   const [specs, setSpecs] = useState<GetSpecs[]>([]);
-  const [processorStatus, setProcessorStatus] = useState<InstanceStatus | null>(null);
-  const [processorInstance, setProcessorInstance] = useState<InstanceAndSpec | null>(null);
+  const [processorStatus, setProcessorStatus] = useState<InstanceStatus | null>(
+    null,
+  );
+  const [processorInstance, setProcessorInstance] =
+    useState<InstanceAndSpec | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('spec');
+  const [activeTab, setActiveTab] = useState("spec");
   const [configState, setConfigState] = useState<ConfigState>({
     basic: null,
     events: [],
-    remapping: null
+    remapping: null,
   });
 
   // Initialize API client
   const shepherdApiClient = createPlatformAdminApiClient({
     apiUrl: SHEPHERD_API_URL,
-    customFetch: async (input: RequestInfo | URL, init: RequestInit | undefined) => {
+    customFetch: async (
+      input: RequestInfo | URL,
+      init: RequestInit | undefined,
+    ) => {
       const fetchHeaders = new Headers(init?.headers);
       const headers = getHeaders();
       Object.entries(headers).forEach(([key, value]) => {
@@ -51,21 +50,21 @@ const ProcessorPage = () => {
       });
       const response = await fetch(input, { ...init, headers: fetchHeaders });
       return response;
-    }
+    },
   });
 
   // Initialize basic config with default values
   useEffect(() => {
     if (!configState.basic) {
-      setConfigState(prev => ({
+      setConfigState((prev) => ({
         ...prev,
         basic: {
-          network: 'devnet',
+          network: "devnet",
           starting_version: 0,
           starting_version_override: null,
           max_write_per_five_minutes_bytes: 1000000,
-          max_db_size_bytes: 1000000000
-        }
+          max_db_size_bytes: 1000000000,
+        },
       }));
     }
   }, []);
@@ -77,11 +76,11 @@ const ProcessorPage = () => {
         const data = await shepherdApiClient.query(["getSpecs", null]);
         setSpecs(data);
       } catch (err) {
-        console.error('Failed to fetch processor specs:', err);
+        console.error("Failed to fetch processor specs:", err);
         if (err instanceof Error) {
           setError(err.message);
         } else {
-          setError('Failed to fetch processor specs');
+          setError("Failed to fetch processor specs");
         }
       }
     };
@@ -90,8 +89,13 @@ const ProcessorPage = () => {
   }, []);
 
   const createProcessor = async () => {
-    if (!selectedSpec || !contractAddress || !configState.basic || !configState.remapping) {
-      setError('Please complete all configuration steps');
+    if (
+      !selectedSpec ||
+      !contractAddress ||
+      !configState.basic ||
+      !configState.remapping
+    ) {
+      setError("Please complete all configuration steps");
       return;
     }
 
@@ -102,30 +106,33 @@ const ProcessorPage = () => {
       const specIdentifier: SpecIdentifierArgs = {
         spec_creator: selectedSpec.creator_email,
         spec_name: selectedSpec.name,
-        spec_version: selectedSpec.version
+        spec_version: selectedSpec.version,
       };
 
-      const result = await shepherdApiClient.mutation(["createInstance", {
-        spec_identifier: specIdentifier,
-        common_config: configState.basic,
-        custom_config: {
-          ...configState.remapping,
-          contract_address: contractAddress
-        }
-      }]);
-      
+      const result = await shepherdApiClient.mutation([
+        "createInstance",
+        {
+          spec_identifier: specIdentifier,
+          common_config: configState.basic,
+          custom_config: {
+            ...configState.remapping,
+            contract_address: contractAddress,
+          },
+        },
+      ]);
+
       // Start polling for status
       if (result) {
         pollProcessorStatus(result);
       } else {
-        throw new Error('Invalid response from createInstance');
+        throw new Error("Invalid response from createInstance");
       }
     } catch (err) {
-      console.error('Failed to create processor:', err);
+      console.error("Failed to create processor:", err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Failed to create processor');
+        setError("Failed to create processor");
       }
     } finally {
       setLoading(false);
@@ -138,9 +145,9 @@ const ProcessorPage = () => {
         const response = await shepherdApiClient.query(["getInstance"]);
         setProcessorInstance(response.instance);
         setProcessorStatus(response.status);
-        return response.status.overall_status === 'Provisioning';
+        return response.status.overall_status === "Provisioning";
       } catch (err) {
-        console.error('Error polling status:', err);
+        console.error("Error polling status:", err);
         return true;
       }
     };
@@ -156,19 +163,19 @@ const ProcessorPage = () => {
   };
 
   const getStatusDisplay = (status: any) => {
-    if (!status) return 'Unknown';
-    if (typeof status === 'string') return status;
-    if (typeof status === 'object') {
+    if (!status) return "Unknown";
+    if (typeof status === "string") return status;
+    if (typeof status === "object") {
       // Handle variant types
       const variant = Object.keys(status)[0];
       return variant;
     }
-    return 'Unknown';
+    return "Unknown";
   };
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'spec':
+      case "spec":
         return (
           <div className="form-control w-full mb-4 flex items-center">
             <div className="w-full max-w-md">
@@ -177,14 +184,16 @@ const ProcessorPage = () => {
               </label>
               <select
                 className="select select-bordered w-full"
-                value={selectedSpec?.id.toString() || ''}
+                value={selectedSpec?.id.toString() || ""}
                 onChange={(e) => {
-                  const spec = specs.find(s => s.id.toString() === e.target.value);
+                  const spec = specs.find(
+                    (s) => s.id.toString() === e.target.value,
+                  );
                   setSelectedSpec(spec || null);
                 }}
               >
                 <option value="">Select a spec</option>
-                {specs.map(spec => (
+                {specs.map((spec) => (
                   <option key={spec.id} value={spec.id.toString()}>
                     {spec.name}
                   </option>
@@ -194,9 +203,9 @@ const ProcessorPage = () => {
                 <div className="mt-4 text-center">
                   <h3 className="font-semibold">Selected Spec Details:</h3>
                   <p>{selectedSpec.description}</p>
-                  <button 
+                  <button
                     className="btn btn-primary mt-4"
-                    onClick={() => setActiveTab('basic')}
+                    onClick={() => setActiveTab("basic")}
                   >
                     Next
                   </button>
@@ -205,11 +214,13 @@ const ProcessorPage = () => {
             </div>
           </div>
         );
-      case 'basic':
+      case "basic":
         return (
           <div className="form-control w-full mb-4 flex items-center">
             <div className="w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4 text-center">Basic Configuration</h2>
+              <h2 className="text-xl font-bold mb-4 text-center">
+                Basic Configuration
+              </h2>
               <div className="form-control mb-4">
                 <label className="label">
                   <span className="label-text">Contract Address</span>
@@ -226,20 +237,20 @@ const ProcessorPage = () => {
                 <label className="label">
                   <span className="label-text">Network</span>
                 </label>
-                <select 
+                <select
                   className="select select-bordered w-full"
-                  value={configState.basic?.network || 'devnet'}
+                  value={configState.basic?.network || "devnet"}
                   onChange={(e) => {
                     const network = e.target.value;
-                    setConfigState(prev => ({
+                    setConfigState((prev) => ({
                       ...prev,
                       basic: {
                         network,
                         starting_version: 0,
                         starting_version_override: null,
                         max_write_per_five_minutes_bytes: 1000000,
-                        max_db_size_bytes: 1000000000
-                      }
+                        max_db_size_bytes: 1000000000,
+                      },
                     }));
                   }}
                 >
@@ -249,15 +260,12 @@ const ProcessorPage = () => {
                 </select>
               </div>
               <div className="flex justify-between">
-                <button 
-                  className="btn"
-                  onClick={() => setActiveTab('spec')}
-                >
+                <button className="btn" onClick={() => setActiveTab("spec")}>
                   Back
                 </button>
-                <button 
+                <button
                   className="btn btn-primary"
-                  onClick={() => setActiveTab('events')}
+                  onClick={() => setActiveTab("events")}
                   disabled={!contractAddress}
                 >
                   Next
@@ -266,63 +274,76 @@ const ProcessorPage = () => {
             </div>
           </div>
         );
-      case 'events':
+      case "events":
         return (
           <div className="w-full h-[calc(100vh-16rem)]">
             <EventSelection
               contractAddress={contractAddress}
               onEventsSelected={(events) => {
-                setConfigState(prev => ({
+                setConfigState((prev) => ({
                   ...prev,
-                  events
+                  events,
                 }));
               }}
-              onBack={() => setActiveTab('basic')}
-              onNext={() => setActiveTab('remapping')}
+              onBack={() => setActiveTab("basic")}
+              onNext={() => setActiveTab("remapping")}
             />
           </div>
         );
-      case 'remapping':
+      case "remapping":
         return (
           <div className="w-full h-[calc(100vh-16rem)]">
             <RemappingConfiguration
               selectedEvents={configState.events}
               onConfigurationComplete={(config) => {
-                setConfigState(prev => ({
+                setConfigState((prev) => ({
                   ...prev,
-                  remapping: config
+                  remapping: config,
                 }));
               }}
-              onBack={() => setActiveTab('events')}
-              onNext={() => setActiveTab('review')}
+              onBack={() => setActiveTab("events")}
+              onNext={() => setActiveTab("review")}
               contractAddress={contractAddress}
             />
           </div>
         );
-      case 'review':
+      case "review":
         return (
           <div className="w-full h-[calc(100vh-16rem)] overflow-y-auto">
             <div className="container mx-auto max-w-3xl p-4">
-              <h2 className="text-xl font-bold mb-4 text-center">Review Configuration</h2>
+              <h2 className="text-xl font-bold mb-4 text-center">
+                Review Configuration
+              </h2>
               <div className="mb-4 text-sm opacity-50">
                 <p>Debug Info:</p>
                 <pre className="bg-base-300 p-2 rounded">
-                  {JSON.stringify({
-                    hasSpec: !!selectedSpec,
-                    hasAddress: !!contractAddress,
-                    hasBasicConfig: !!configState.basic,
-                    hasRemapping: !!configState.remapping,
-                    isLoading: loading
-                  }, null, 2)}
+                  {JSON.stringify(
+                    {
+                      hasSpec: !!selectedSpec,
+                      hasAddress: !!contractAddress,
+                      hasBasicConfig: !!configState.basic,
+                      hasRemapping: !!configState.remapping,
+                      isLoading: loading,
+                    },
+                    null,
+                    2,
+                  )}
                 </pre>
               </div>
               <div className="space-y-6">
                 <div>
                   <h3 className="font-semibold mb-2">Basic Configuration:</h3>
                   <div className="bg-base-200 p-4 rounded-lg">
-                    <p><span className="font-semibold">Contract Address:</span></p>
-                    <p className="font-mono text-sm break-all">{contractAddress}</p>
-                    <p className="mt-2"><span className="font-semibold">Network:</span> {configState.basic?.network}</p>
+                    <p>
+                      <span className="font-semibold">Contract Address:</span>
+                    </p>
+                    <p className="font-mono text-sm break-all">
+                      {contractAddress}
+                    </p>
+                    <p className="mt-2">
+                      <span className="font-semibold">Network:</span>{" "}
+                      {configState.basic?.network}
+                    </p>
                   </div>
                 </div>
 
@@ -331,14 +352,18 @@ const ProcessorPage = () => {
                   <div className="bg-base-200 p-4 rounded-lg">
                     <ul className="space-y-2">
                       {configState.events.map((event, index) => (
-                        <li key={index} className="font-mono text-sm">{event}</li>
+                        <li key={index} className="font-mono text-sm">
+                          {event}
+                        </li>
                       ))}
                     </ul>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-2">Remapping Configuration:</h3>
+                  <h3 className="font-semibold mb-2">
+                    Remapping Configuration:
+                  </h3>
                   <div className="bg-base-200 p-4 rounded-lg">
                     <pre className="overflow-x-auto font-mono text-sm whitespace-pre-wrap">
                       {JSON.stringify(configState.remapping, null, 2)}
@@ -347,18 +372,24 @@ const ProcessorPage = () => {
                 </div>
 
                 <div className="flex justify-between pt-4">
-                  <button 
+                  <button
                     className="btn"
-                    onClick={() => setActiveTab('remapping')}
+                    onClick={() => setActiveTab("remapping")}
                   >
                     Back
                   </button>
                   <button
-                    className={`btn btn-primary ${loading ? 'loading' : ''}`}
+                    className={`btn btn-primary ${loading ? "loading" : ""}`}
                     onClick={createProcessor}
-                    disabled={loading || !selectedSpec || !contractAddress || !configState.basic || !configState.remapping}
+                    disabled={
+                      loading ||
+                      !selectedSpec ||
+                      !contractAddress ||
+                      !configState.basic ||
+                      !configState.remapping
+                    }
                   >
-                    {loading ? 'Creating...' : 'Create Processor'}
+                    {loading ? "Creating..." : "Create Processor"}
                   </button>
                 </div>
               </div>
@@ -374,8 +405,10 @@ const ProcessorPage = () => {
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="w-full flex flex-col flex-1 bg-base-100">
         <div className="flex-none p-6">
-          <h1 className="text-2xl font-bold mb-4 text-center">Create Processor</h1>
-          
+          <h1 className="text-2xl font-bold mb-4 text-center">
+            Create Processor
+          </h1>
+
           {error && (
             <div className="alert alert-error mb-4">
               <span>{error}</span>
@@ -383,63 +416,71 @@ const ProcessorPage = () => {
           )}
 
           <div className="tabs tabs-boxed justify-center mb-4">
-            <a 
-              className={`tab ${activeTab === 'spec' ? 'tab-active' : ''}`}
-              onClick={() => setActiveTab('spec')}
+            <a
+              className={`tab ${activeTab === "spec" ? "tab-active" : ""}`}
+              onClick={() => setActiveTab("spec")}
             >
               Select Spec
             </a>
-            <a 
-              className={`tab ${activeTab === 'basic' ? 'tab-active' : ''}`}
-              onClick={() => setActiveTab('basic')}
+            <a
+              className={`tab ${activeTab === "basic" ? "tab-active" : ""}`}
+              onClick={() => setActiveTab("basic")}
             >
               Basic Config
             </a>
-            <a 
-              className={`tab ${activeTab === 'events' ? 'tab-active' : ''}`}
-              onClick={() => setActiveTab('events')}
+            <a
+              className={`tab ${activeTab === "events" ? "tab-active" : ""}`}
+              onClick={() => setActiveTab("events")}
             >
               Events
             </a>
-            <a 
-              className={`tab ${activeTab === 'remapping' ? 'tab-active' : ''}`}
-              onClick={() => setActiveTab('remapping')}
+            <a
+              className={`tab ${activeTab === "remapping" ? "tab-active" : ""}`}
+              onClick={() => setActiveTab("remapping")}
             >
               Remapping
             </a>
-            <a 
-              className={`tab ${activeTab === 'review' ? 'tab-active' : ''}`}
-              onClick={() => setActiveTab('review')}
+            <a
+              className={`tab ${activeTab === "review" ? "tab-active" : ""}`}
+              onClick={() => setActiveTab("review")}
             >
               Review
             </a>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6">
-          {renderTabContent()}
-        </div>
+        <div className="flex-1 overflow-y-auto px-6">{renderTabContent()}</div>
 
         {processorStatus && (
           <div className="flex-none p-6 border-t">
             <div className="w-full max-w-4xl mx-auto">
-              <h3 className="font-semibold mb-2 text-center">Processor Status:</h3>
+              <h3 className="font-semibold mb-2 text-center">
+                Processor Status:
+              </h3>
               <div className="stats shadow w-full">
                 <div className="stat">
                   <div className="stat-title">Status</div>
-                  <div className="stat-value">{getStatusDisplay(processorStatus.overall_status)}</div>
+                  <div className="stat-value">
+                    {getStatusDisplay(processorStatus.overall_status)}
+                  </div>
                 </div>
                 <div className="stat">
                   <div className="stat-title">Database</div>
-                  <div className="stat-value">{getStatusDisplay(processorStatus.db_status)}</div>
+                  <div className="stat-value">
+                    {getStatusDisplay(processorStatus.db_status)}
+                  </div>
                 </div>
                 <div className="stat">
                   <div className="stat-title">Processor</div>
-                  <div className="stat-value">{getStatusDisplay(processorStatus.processor_status)}</div>
+                  <div className="stat-value">
+                    {getStatusDisplay(processorStatus.processor_status)}
+                  </div>
                 </div>
                 <div className="stat">
                   <div className="stat-title">API</div>
-                  <div className="stat-value">{getStatusDisplay(processorStatus.api_status)}</div>
+                  <div className="stat-value">
+                    {getStatusDisplay(processorStatus.api_status)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -450,4 +491,4 @@ const ProcessorPage = () => {
   );
 };
 
-export default ProcessorPage; 
+export default ProcessorPage;

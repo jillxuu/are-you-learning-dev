@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { useContract } from '../../hooks/useContract';
-import { Network } from '@aptos-labs/ts-sdk';
-import { Code } from './CodeSnippet';
-import { PackageMetadata, useGetAccountPackages } from '../../hooks/useGetAccountResource';
-import { getAptosClient } from '../../api/client';
-import { Hex } from '@aptos-labs/ts-sdk';
-import pako from 'pako';
+import React, { useEffect, useState } from "react";
+import { useContract } from "../../hooks/useContract";
+import { Network } from "@aptos-labs/ts-sdk";
+import { Code } from "./CodeSnippet";
+import {
+  PackageMetadata,
+  useGetAccountPackages,
+} from "../../hooks/useGetAccountResource";
+import { getAptosClient } from "../../api/client";
+import { Hex } from "@aptos-labs/ts-sdk";
+import pako from "pako";
 
 interface Props {
   address: string;
@@ -19,16 +22,21 @@ interface ModuleSource {
   source: string;
 }
 
-export default function ViewCode({ address, network, moduleName, onSourceUpdate }: Props) {
+export default function ViewCode({
+  address,
+  network,
+  moduleName,
+  onSourceUpdate,
+}: Props) {
   const sortedPackages: PackageMetadata[] = useGetAccountPackages(address);
   const [moduleSource, setModuleSource] = useState<ModuleSource | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const { getModule } = useContract({
     network,
     address,
-    moduleName
+    moduleName,
   });
 
   useEffect(() => {
@@ -40,28 +48,32 @@ export default function ViewCode({ address, network, moduleName, onSourceUpdate 
   const decodeManifest = (manifest: string): string | null => {
     try {
       // Remove 0x prefix if present
-      const cleanManifest = manifest.startsWith('0x') ? manifest.slice(2) : manifest;
-      
+      const cleanManifest = manifest.startsWith("0x")
+        ? manifest.slice(2)
+        : manifest;
+
       // Convert hex to bytes
       const bytes = Hex.fromHexString(cleanManifest).toUint8Array();
-      
+
       // Decompress gzip
-      const decompressed = pako.ungzip(bytes, { to: 'string' });
-      
+      const decompressed = pako.ungzip(bytes, { to: "string" });
+
       // The decompressed data contains multiple files
       // Split by Move.toml to get the source files section
-      const parts = decompressed.split('Move.toml');
+      const parts = decompressed.split("Move.toml");
       if (parts.length < 2) return null;
-      
+
       // Find the module source file
-      const sourceFileMatch = parts[1].match(new RegExp(`sources/${moduleName}\\.move([^]*)`, 'i'));
+      const sourceFileMatch = parts[1].match(
+        new RegExp(`sources/${moduleName}\\.move([^]*)`, "i"),
+      );
       if (!sourceFileMatch) return null;
-      
+
       // Extract the source code
       const source = sourceFileMatch[1].trim();
       return source || null;
     } catch (err) {
-      console.error('Failed to decode manifest:', err);
+      console.error("Failed to decode manifest:", err);
       return null;
     }
   };
@@ -72,8 +84,8 @@ export default function ViewCode({ address, network, moduleName, onSourceUpdate 
       setError(null);
 
       // First try to get source from manifest in packages
-      const pkg = sortedPackages.find(p => 
-        p.modules.some(m => m.name === moduleName)
+      const pkg = sortedPackages.find((p) =>
+        p.modules.some((m) => m.name === moduleName),
       );
 
       if (pkg?.manifest) {
@@ -81,7 +93,7 @@ export default function ViewCode({ address, network, moduleName, onSourceUpdate 
         if (source) {
           setModuleSource({
             name: moduleName,
-            source
+            source,
           });
           onSourceUpdate(source);
           return;
@@ -94,15 +106,17 @@ export default function ViewCode({ address, network, moduleName, onSourceUpdate 
         const source = generateSourceFromABI(moduleInfo.abi);
         setModuleSource({
           name: moduleInfo.abi.name,
-          source
+          source,
         });
         onSourceUpdate(source);
       } else {
-        throw new Error('No source code or ABI available');
+        throw new Error("No source code or ABI available");
       }
     } catch (err) {
-      console.error('Failed to load module source:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load module source');
+      console.error("Failed to load module source:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load module source",
+      );
     } finally {
       setLoading(false);
     }
@@ -118,23 +132,41 @@ export default function ViewCode({ address, network, moduleName, onSourceUpdate 
     use aptos_framework::option::{Self, Option};
 
     // Structs
-${abi.structs?.map((struct: any) => `    struct ${struct.name} {
-${struct.fields?.map((field: any) => `        ${field.name}: ${field.type},`).join('\n')}
-    }`).join('\n\n') || ''}
+${
+  abi.structs
+    ?.map(
+      (struct: any) => `    struct ${struct.name} {
+${struct.fields?.map((field: any) => `        ${field.name}: ${field.type},`).join("\n")}
+    }`,
+    )
+    .join("\n\n") || ""
+}
 
     // Constants
-${abi.exposed_functions
-  ?.filter((fn: any) => fn.is_entry)
-  .map((fn: any) => `    public entry fun ${fn.name}(${fn.params.map((p: any) => `${p}: ${p}`).join(', ')})${
-    fn.return.length ? ` -> (${fn.return.join(', ')})` : ''
-  } { /* ... */ }`).join('\n\n') || ''}
+${
+  abi.exposed_functions
+    ?.filter((fn: any) => fn.is_entry)
+    .map(
+      (fn: any) =>
+        `    public entry fun ${fn.name}(${fn.params.map((p: any) => `${p}: ${p}`).join(", ")})${
+          fn.return.length ? ` -> (${fn.return.join(", ")})` : ""
+        } { /* ... */ }`,
+    )
+    .join("\n\n") || ""
+}
 
     // View Functions
-${abi.exposed_functions
-  ?.filter((fn: any) => fn.is_view)
-  .map((fn: any) => `    public fun ${fn.name}(${fn.params.map((p: any) => `${p}: ${p}`).join(', ')})${
-    fn.return.length ? ` -> (${fn.return.join(', ')})` : ''
-  } { /* ... */ }`).join('\n\n') || ''}
+${
+  abi.exposed_functions
+    ?.filter((fn: any) => fn.is_view)
+    .map(
+      (fn: any) =>
+        `    public fun ${fn.name}(${fn.params.map((p: any) => `${p}: ${p}`).join(", ")})${
+          fn.return.length ? ` -> (${fn.return.join(", ")})` : ""
+        } { /* ... */ }`,
+    )
+    .join("\n\n") || ""
+}
 }`;
     return source;
   };
@@ -180,4 +212,4 @@ ${abi.exposed_functions
       </div>
     </div>
   );
-} 
+}

@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Network, AccountAddress } from '@aptos-labs/ts-sdk';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Network, AccountAddress } from "@aptos-labs/ts-sdk";
 
 export default function ModuleExplorer() {
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState("");
   const [network, setNetwork] = useState<Network>(Network.DEVNET);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>("");
   const navigate = useNavigate();
 
   const validateAndFormatAddress = (addr: string): string | null => {
     try {
       if (!addr) {
-        setError('Please enter a contract address');
+        setError("Please enter a contract address");
         return null;
       }
       // Try to parse and format the address
       const parsedAddr = AccountAddress.from(addr);
       return parsedAddr.toString();
     } catch (err) {
-      setError('Invalid address format');
+      setError("Invalid address format");
       return null;
     }
   };
@@ -30,11 +30,11 @@ export default function ModuleExplorer() {
     }
 
     // Store network in localStorage for persistence
-    localStorage.setItem('selectedNetwork', network);
-    
+    localStorage.setItem("selectedNetwork", network);
+
     // Navigate with both address and network
     navigate(`/modules/${formattedAddress}/code`, {
-      state: { network, address: formattedAddress }
+      state: { network, address: formattedAddress },
     });
   };
 
@@ -53,11 +53,11 @@ export default function ModuleExplorer() {
             <input
               type="text"
               placeholder="0x..."
-              className={`input input-bordered w-full ${error ? 'input-error' : ''}`}
+              className={`input input-bordered w-full ${error ? "input-error" : ""}`}
               value={address}
               onChange={(e) => {
                 setAddress(e.target.value);
-                setError('');
+                setError("");
               }}
             />
             {error && (
@@ -70,7 +70,7 @@ export default function ModuleExplorer() {
             <label className="label">
               <span className="label-text">Network</span>
             </label>
-            <select 
+            <select
               className="select select-bordered w-full"
               value={network}
               onChange={(e) => setNetwork(e.target.value as Network)}
@@ -80,14 +80,11 @@ export default function ModuleExplorer() {
               <option value={Network.MAINNET}>Mainnet</option>
             </select>
           </div>
-          <button 
-            className="btn btn-primary w-full"
-            onClick={handleExplore}
-          >
+          <button className="btn btn-primary w-full" onClick={handleExplore}>
             Explore Module
           </button>
         </div>
       </div>
     </div>
   );
-} 
+}

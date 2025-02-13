@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import Editor from "@monaco-editor/react";
-import * as monaco from 'monaco-editor';
-import ContractDeployment from './ContractDeployment';
+import * as monaco from "monaco-editor";
+import ContractDeployment from "./ContractDeployment";
 
 interface Props {
   code: string;
@@ -19,28 +19,37 @@ interface EditableRegion {
 
 interface CompilationError {
   message: string;
-  type: 'error' | 'warning';
+  type: "error" | "warning";
 }
 
-export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, onReset }: Props) {
+export default function CodePlaygroundView({
+  code,
+  onCodeChange,
+  onCheckCode,
+  onReset,
+}: Props) {
   const [editableRegions, setEditableRegions] = useState<EditableRegion[]>([]);
-  const [selectedRegion, setSelectedRegion] = useState<EditableRegion | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<EditableRegion | null>(
+    null,
+  );
   const [isCompiling, setIsCompiling] = useState(false);
-  const [editorInstance, setEditorInstance] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [editorInstance, setEditorInstance] =
+    useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [showDeployment, setShowDeployment] = useState(false);
-  const [compilationError, setCompilationError] = useState<CompilationError | null>(null);
+  const [compilationError, setCompilationError] =
+    useState<CompilationError | null>(null);
   const [privateKey, setPrivateKey] = useState<string | null>(null);
 
   useEffect(() => {
     // Parse code to find editable regions marked with special comments
-    const lines = code.split('\n');
+    const lines = code.split("\n");
     const regions: EditableRegion[] = [];
     let currentStart: number | null = null;
-    let currentTitle = '';
-    let currentDescription = '';
+    let currentTitle = "";
+    let currentDescription = "";
 
     lines.forEach((line, index) => {
-      if (line.includes('// @editable-begin')) {
+      if (line.includes("// @editable-begin")) {
         currentStart = index + 1;
         // Extract title and description from comment
         const match = line.match(/\/\/ @editable-begin\s*([^-]+)-\s*(.+)/);
@@ -48,19 +57,19 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
           currentTitle = match[1].trim();
           currentDescription = match[2].trim();
         } else {
-          currentTitle = 'Editable Section';
-          currentDescription = 'This section can be modified';
+          currentTitle = "Editable Section";
+          currentDescription = "This section can be modified";
         }
-      } else if (line.includes('// @editable-end') && currentStart !== null) {
+      } else if (line.includes("// @editable-end") && currentStart !== null) {
         regions.push({
           start: currentStart,
           end: index,
           title: currentTitle,
-          description: currentDescription
+          description: currentDescription,
         });
         currentStart = null;
-        currentTitle = '';
-        currentDescription = '';
+        currentTitle = "";
+        currentDescription = "";
       }
     });
 
@@ -74,42 +83,48 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
 
       // Get total lines and validate all line numbers
       const totalLines = model.getLineCount();
-      const validatedRegions = editableRegions.map(region => ({
-        ...region,
-        start: Math.min(Math.max(1, region.start), totalLines),
-        end: Math.min(Math.max(1, region.end), totalLines)
-      })).filter(region => region.start <= region.end);
+      const validatedRegions = editableRegions
+        .map((region) => ({
+          ...region,
+          start: Math.min(Math.max(1, region.start), totalLines),
+          end: Math.min(Math.max(1, region.end), totalLines),
+        }))
+        .filter((region) => region.start <= region.end);
 
       // Set up decorations for visual feedback
-      const editableDecorations = validatedRegions.map(region => ({
+      const editableDecorations = validatedRegions.map((region) => ({
         range: new monaco.Range(
-          region.start, 1,
-          region.end, model.getLineMaxColumn(region.end)
+          region.start,
+          1,
+          region.end,
+          model.getLineMaxColumn(region.end),
         ),
         options: {
           isWholeLine: true,
-          className: 'editable-region',
-          glyphMarginClassName: 'editable-region-glyph',
-          inlineClassName: 'editable-region-inline'
-        }
+          className: "editable-region",
+          glyphMarginClassName: "editable-region-glyph",
+          inlineClassName: "editable-region-inline",
+        },
       }));
 
       // Create read-only decorations for non-editable regions
       const readOnlyDecorations = [];
       let lastEnd = 0;
-      
+
       for (const region of validatedRegions) {
         if (region.start > lastEnd + 1) {
           readOnlyDecorations.push({
             range: new monaco.Range(
-              lastEnd + 1, 1,
-              region.start - 1, model.getLineMaxColumn(region.start - 1)
+              lastEnd + 1,
+              1,
+              region.start - 1,
+              model.getLineMaxColumn(region.start - 1),
             ),
             options: {
               isWholeLine: true,
-              className: 'readonly-region',
-              inlineClassName: 'readonly-background'
-            }
+              className: "readonly-region",
+              inlineClassName: "readonly-background",
+            },
           });
         }
         lastEnd = region.end;
@@ -119,77 +134,87 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
       if (lastEnd < totalLines) {
         readOnlyDecorations.push({
           range: new monaco.Range(
-            lastEnd + 1, 1,
-            totalLines, model.getLineMaxColumn(totalLines)
+            lastEnd + 1,
+            1,
+            totalLines,
+            model.getLineMaxColumn(totalLines),
           ),
           options: {
             isWholeLine: true,
-            className: 'readonly-region',
-            inlineClassName: 'readonly-background'
-          }
+            className: "readonly-region",
+            inlineClassName: "readonly-background",
+          },
         });
       }
 
       // Apply all decorations
-      const decorations = editorInstance.deltaDecorations([], [...editableDecorations, ...readOnlyDecorations]);
+      const decorations = editorInstance.deltaDecorations(
+        [],
+        [...editableDecorations, ...readOnlyDecorations],
+      );
 
       // Function to check if a position is in an editable region
       const isPositionEditable = (position: monaco.Position): boolean => {
-        return validatedRegions.some(region => 
-          position.lineNumber >= region.start && 
-          position.lineNumber <= region.end
+        return validatedRegions.some(
+          (region) =>
+            position.lineNumber >= region.start &&
+            position.lineNumber <= region.end,
         );
       };
 
       // Add key event handler
-      const keyDownDisposable = editorInstance.onKeyDown((e: monaco.IKeyboardEvent) => {
-        const selections = editorInstance.getSelections();
-        if (!selections) return;
+      const keyDownDisposable = editorInstance.onKeyDown(
+        (e: monaco.IKeyboardEvent) => {
+          const selections = editorInstance.getSelections();
+          if (!selections) return;
 
-        // Check if any part of the selection is in a read-only region
-        const isEditAllowed = selections.every(selection => {
-          if (!selection) return false;
-          
-          // For single cursor position
-          if (selection.isEmpty()) {
-            return isPositionEditable(selection.getPosition()!);
+          // Check if any part of the selection is in a read-only region
+          const isEditAllowed = selections.every((selection) => {
+            if (!selection) return false;
+
+            // For single cursor position
+            if (selection.isEmpty()) {
+              return isPositionEditable(selection.getPosition()!);
+            }
+
+            // For text selection
+            const startLine = selection.startLineNumber;
+            const endLine = selection.endLineNumber;
+
+            // Check if the entire selection is within an editable region
+            return validatedRegions.some(
+              (region) => startLine >= region.start && endLine <= region.end,
+            );
+          });
+
+          // Block editing keys in read-only regions
+          if (!isEditAllowed) {
+            const isEditingKey =
+              e.keyCode === monaco.KeyCode.Backspace ||
+              e.keyCode === monaco.KeyCode.Delete ||
+              e.keyCode === monaco.KeyCode.Enter ||
+              e.keyCode === monaco.KeyCode.Tab ||
+              (e.ctrlKey && e.keyCode === monaco.KeyCode.KeyV) || // Paste
+              (!e.ctrlKey &&
+                !e.altKey &&
+                !e.metaKey &&
+                e.keyCode >= monaco.KeyCode.Digit0 &&
+                e.keyCode <= monaco.KeyCode.KeyZ);
+
+            if (isEditingKey) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
           }
-          
-          // For text selection
-          const startLine = selection.startLineNumber;
-          const endLine = selection.endLineNumber;
-          
-          // Check if the entire selection is within an editable region
-          return validatedRegions.some(region => 
-            startLine >= region.start && 
-            endLine <= region.end
-          );
-        });
-
-        // Block editing keys in read-only regions
-        if (!isEditAllowed) {
-          const isEditingKey = (
-            e.keyCode === monaco.KeyCode.Backspace ||
-            e.keyCode === monaco.KeyCode.Delete ||
-            e.keyCode === monaco.KeyCode.Enter ||
-            e.keyCode === monaco.KeyCode.Tab ||
-            (e.ctrlKey && e.keyCode === monaco.KeyCode.KeyV) || // Paste
-            (!e.ctrlKey && !e.altKey && !e.metaKey && e.keyCode >= monaco.KeyCode.Digit0 && e.keyCode <= monaco.KeyCode.KeyZ)
-          );
-
-          if (isEditingKey) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-        }
-      });
+        },
+      );
 
       // Add paste event handler
       const pasteDisposable = editorInstance.onDidPaste(() => {
         const position = editorInstance.getPosition();
         if (position && !isPositionEditable(position)) {
           // Undo the paste operation
-          editorInstance.trigger('keyboard', 'undo', null);
+          editorInstance.trigger("keyboard", "undo", null);
         }
       });
 
@@ -204,41 +229,43 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
   // Register Move language and theme before editor mount
   useEffect(() => {
     // Register Move language as an alias for Rust
-    monaco.languages.register({ id: 'move' });
-    monaco.languages.setLanguageConfiguration('move', {
+    monaco.languages.register({ id: "move" });
+    monaco.languages.setLanguageConfiguration("move", {
       comments: {
-        lineComment: '//',
-        blockComment: ['/*', '*/']
+        lineComment: "//",
+        blockComment: ["/*", "*/"],
       },
       brackets: [
-        ['{', '}'],
-        ['[', ']'],
-        ['(', ')']
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
       ],
       autoClosingPairs: [
-        { open: '{', close: '}' },
-        { open: '[', close: ']' },
-        { open: '(', close: ')' },
+        { open: "{", close: "}" },
+        { open: "[", close: "]" },
+        { open: "(", close: ")" },
         { open: '"', close: '"' },
-        { open: '\'', close: '\'' }
-      ]
+        { open: "'", close: "'" },
+      ],
     });
   }, []);
 
-  const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor) => {
+  const handleEditorDidMount = (
+    editor: monaco.editor.IStandaloneCodeEditor,
+  ) => {
     setEditorInstance(editor);
-    
+
     // Update editor options
     editor.updateOptions({
       fontSize: 14,
       minimap: { enabled: true },
-      lineNumbers: 'on',
-      renderLineHighlight: 'all',
+      lineNumbers: "on",
+      renderLineHighlight: "all",
       scrollBeyondLastLine: false,
-      wordWrap: 'on',
+      wordWrap: "on",
       glyphMargin: true,
       lineDecorationsWidth: 5,
-      padding: { top: 8, bottom: 8 }
+      padding: { top: 8, bottom: 8 },
     });
 
     // Force a re-render of decorations
@@ -246,23 +273,27 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
       const model = editor.getModel();
       if (model) {
         const totalLines = model.getLineCount();
-        const validatedRegions = editableRegions.map(region => ({
-          ...region,
-          start: Math.min(Math.max(1, region.start), totalLines),
-          end: Math.min(Math.max(1, region.end), totalLines)
-        })).filter(region => region.start <= region.end);
+        const validatedRegions = editableRegions
+          .map((region) => ({
+            ...region,
+            start: Math.min(Math.max(1, region.start), totalLines),
+            end: Math.min(Math.max(1, region.end), totalLines),
+          }))
+          .filter((region) => region.start <= region.end);
 
-        const editableDecorations = validatedRegions.map(region => ({
+        const editableDecorations = validatedRegions.map((region) => ({
           range: new monaco.Range(
-            region.start, 1,
-            region.end, model.getLineMaxColumn(region.end)
+            region.start,
+            1,
+            region.end,
+            model.getLineMaxColumn(region.end),
           ),
           options: {
             isWholeLine: true,
-            className: 'editable-region',
-            glyphMarginClassName: 'editable-region-glyph',
-            linesDecorationsClassName: 'editable-region-line'
-          }
+            className: "editable-region",
+            glyphMarginClassName: "editable-region-glyph",
+            linesDecorationsClassName: "editable-region-line",
+          },
         }));
 
         editor.deltaDecorations([], editableDecorations);
@@ -273,8 +304,8 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
     editor.onMouseDown((e) => {
       if (e.target.position) {
         const lineNumber = e.target.position.lineNumber;
-        const region = editableRegions.find(r => 
-          lineNumber >= r.start && lineNumber <= r.end
+        const region = editableRegions.find(
+          (r) => lineNumber >= r.start && lineNumber <= r.end,
         );
         setSelectedRegion(region || null);
       }
@@ -283,16 +314,17 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
 
   const handleCheckCodeClick = async () => {
     if (isCompiling) return;
-    
+
     setIsCompiling(true);
     setCompilationError(null);
-    
+
     try {
       onCheckCode();
     } catch (error) {
       setCompilationError({
-        message: error instanceof Error ? error.message : 'Unknown error occurred',
-        type: 'error'
+        message:
+          error instanceof Error ? error.message : "Unknown error occurred",
+        type: "error",
       });
     } finally {
       setIsCompiling(false);
@@ -303,7 +335,7 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
     setSelectedRegion(region);
     const element = document.getElementById(`region-${region.start}`);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   };
 
@@ -312,20 +344,19 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
       {/* Navbar */}
       <div className="navbar bg-base-200 px-4 shadow-sm sticky top-0 z-50">
         <div className="flex-1">
-          <span className="text-xl font-bold text-primary">Customize Your Meme Coin</span>
+          <span className="text-xl font-bold text-primary">
+            Customize Your Meme Coin
+          </span>
         </div>
         <div className="flex-none gap-2">
-          <button 
-            className={`btn btn-primary ${isCompiling ? 'loading' : ''}`}
+          <button
+            className={`btn btn-primary ${isCompiling ? "loading" : ""}`}
             onClick={handleCheckCodeClick}
             disabled={isCompiling}
           >
-            {isCompiling ? 'Compiling...' : 'Compile'}
+            {isCompiling ? "Compiling..." : "Compile"}
           </button>
-          <button 
-            className="btn btn-ghost"
-            onClick={onReset}
-          >
+          <button className="btn btn-ghost" onClick={onReset}>
             Reset
           </button>
         </div>
@@ -333,18 +364,35 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
 
       {/* Error Display */}
       {compilationError && (
-        <div className={`alert ${compilationError.type === 'error' ? 'alert-error' : 'alert-warning'} shadow-lg mx-4 mt-4`}>
+        <div
+          className={`alert ${compilationError.type === "error" ? "alert-error" : "alert-warning"} shadow-lg mx-4 mt-4`}
+        >
           <div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="stroke-current flex-shrink-0 h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <div>
-              <h3 className="font-bold">Compilation {compilationError.type === 'error' ? 'Error' : 'Warning'}</h3>
-              <div className="text-sm whitespace-pre-wrap">{compilationError.message}</div>
+              <h3 className="font-bold">
+                Compilation{" "}
+                {compilationError.type === "error" ? "Error" : "Warning"}
+              </h3>
+              <div className="text-sm whitespace-pre-wrap">
+                {compilationError.message}
+              </div>
             </div>
           </div>
           <div className="flex-none">
-            <button 
+            <button
               className="btn btn-sm btn-ghost"
               onClick={() => setCompilationError(null)}
             >
@@ -362,11 +410,13 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
             <h2 className="text-xl font-bold mb-4">Editable Sections</h2>
             <div className="space-y-4">
               {editableRegions.map((region, index) => (
-                <div 
+                <div
                   key={index}
                   id={`region-${region.start}`}
                   className={`p-4 rounded-lg transition-colors cursor-pointer hover:bg-base-200 ${
-                    selectedRegion === region ? 'bg-primary/10 border-2 border-primary' : 'bg-base-200'
+                    selectedRegion === region
+                      ? "bg-primary/10 border-2 border-primary"
+                      : "bg-base-200"
                   }`}
                   onClick={() => {
                     setSelectedRegion(region);
@@ -375,7 +425,9 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
                 >
                   <h3 className="font-medium text-primary">{region.title}</h3>
                   <p className="text-sm mt-2">{region.description}</p>
-                  <p className="text-xs opacity-70 mt-2">Lines {region.start}-{region.end}</p>
+                  <p className="text-xs opacity-70 mt-2">
+                    Lines {region.start}-{region.end}
+                  </p>
                 </div>
               ))}
             </div>
@@ -389,7 +441,7 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
             defaultLanguage="rust"
             language="rust"
             value={code}
-            onChange={value => value && onCodeChange(value)}
+            onChange={(value) => value && onCodeChange(value)}
             theme="vs-dark"
             onMount={handleEditorDidMount}
             options={{
@@ -397,9 +449,9 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
               minimap: { enabled: true },
               glyphMargin: true,
               lineDecorationsWidth: 5,
-              renderLineHighlight: 'all',
-              lineNumbers: 'on',
-              fontSize: 14
+              renderLineHighlight: "all",
+              lineNumbers: "on",
+              fontSize: 14,
             }}
           />
         </div>
@@ -409,19 +461,32 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
           <div className="p-4 h-full overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Instructions</h2>
             <div className="prose">
-              <p>Learn how to customize your meme coin by modifying the highlighted sections:</p>
+              <p>
+                Learn how to customize your meme coin by modifying the
+                highlighted sections:
+              </p>
               <ul className="list-disc list-inside space-y-2 text-sm mt-4">
-                <li>Click on a section in the left sidebar to navigate to it</li>
+                <li>
+                  Click on a section in the left sidebar to navigate to it
+                </li>
                 <li>Only highlighted sections can be modified</li>
                 <li>Press Ctrl+Space for code suggestions</li>
-                <li>Click Compile to validate your changes - you'll need a private key for this step</li>
-                <li>After successful compilation, you can deploy your contract to a network of your choice</li>
+                <li>
+                  Click Compile to validate your changes - you'll need a private
+                  key for this step
+                </li>
+                <li>
+                  After successful compilation, you can deploy your contract to
+                  a network of your choice
+                </li>
                 <li>Click Reset to restore the original code</li>
               </ul>
 
               {selectedRegion && (
                 <div className="mt-8">
-                  <h3 className="font-bold">Selected Section: {selectedRegion.title}</h3>
+                  <h3 className="font-bold">
+                    Selected Section: {selectedRegion.title}
+                  </h3>
                   <p className="text-sm mt-2">{selectedRegion.description}</p>
                 </div>
               )}
@@ -437,9 +502,9 @@ export default function CodePlaygroundView({ code, onCodeChange, onCheckCode, on
           onCancel={() => setShowDeployment(false)}
           currentCode={code}
           packageName="meme_factory"
-          privateKey={privateKey || ''}
+          privateKey={privateKey || ""}
         />
       )}
     </div>
   );
-} 
+}

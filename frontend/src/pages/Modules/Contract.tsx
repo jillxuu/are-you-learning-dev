@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Network } from '@aptos-labs/ts-sdk';
-import { useContract } from '../../hooks/useContract';
-import { Code } from './CodeSnippet';
-import { getAptosClient } from '../../api/client';
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Network } from "@aptos-labs/ts-sdk";
+import { useContract } from "../../hooks/useContract";
+import { Code } from "./CodeSnippet";
 
 interface Props {
   address: string;
@@ -40,13 +39,21 @@ interface ModuleInfo {
   bytecode?: string;
 }
 
-export default function Contract({ address, network, isRead, moduleName, sourceCode }: Props) {
+export default function Contract({
+  address,
+  network,
+  isRead,
+  moduleName,
+  sourceCode,
+}: Props) {
   const { selectedModuleName, selectedFnName } = useParams();
-  const [selectedFunction, setSelectedFunction] = useState<string>('');
+  const [selectedFunction, setSelectedFunction] = useState<string>("");
   const [functionParams, setFunctionParams] = useState<string[]>([]);
-  const [result, setResult] = useState<string>('');
-  const [privateKey, setPrivateKey] = useState<string>('');
-  const [functions, setFunctions] = useState<{[key: string]: FunctionInfo}>({});
+  const [result, setResult] = useState<string>("");
+  const [privateKey, setPrivateKey] = useState<string>("");
+  const [functions, setFunctions] = useState<{ [key: string]: FunctionInfo }>(
+    {},
+  );
   const [moduleInfo, setModuleInfo] = useState<ModuleInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +61,7 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
   const { callViewFunction, callFunction, getModule } = useContract({
     network,
     address,
-    moduleName: selectedModuleName || ''
+    moduleName: selectedModuleName || "",
   });
 
   useEffect(() => {
@@ -88,22 +95,27 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
             // For entry functions tab, show only entry functions
             return fn.is_entry;
           })
-          .reduce((acc: {[key: string]: FunctionInfo}, func: ModuleFunction) => {
-            acc[func.name] = {
-              name: func.name,
-              visibility: func.visibility,
-              isEntry: func.is_entry,
-              genericTypeParams: func.generic_type_params,
-              params: func.params,
-              return: func.return
-            };
-            return acc;
-          }, {});
+          .reduce(
+            (acc: { [key: string]: FunctionInfo }, func: ModuleFunction) => {
+              acc[func.name] = {
+                name: func.name,
+                visibility: func.visibility,
+                isEntry: func.is_entry,
+                genericTypeParams: func.generic_type_params,
+                params: func.params,
+                return: func.return,
+              };
+              return acc;
+            },
+            {},
+          );
         setFunctions(exposedFunctions);
       }
     } catch (err) {
-      console.error('Failed to load module info:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load module info');
+      console.error("Failed to load module info:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load module info",
+      );
     } finally {
       setLoading(false);
     }
@@ -112,13 +124,15 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
   const handleFunctionSelect = (funcName: string) => {
     setSelectedFunction(funcName);
     setFunctionParams([]);
-    setResult('');
+    setResult("");
 
     const func = functions[funcName];
     if (func) {
       // Skip signer parameter for entry functions
-      const paramCount = func.isEntry ? func.params.length - 1 : func.params.length;
-      setFunctionParams(new Array(paramCount).fill(''));
+      const paramCount = func.isEntry
+        ? func.params.length - 1
+        : func.params.length;
+      setFunctionParams(new Array(paramCount).fill(""));
     }
   };
 
@@ -130,7 +144,7 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
 
   const executeFunction = async () => {
     if (!selectedFunction) return;
-    
+
     try {
       const func = functions[selectedFunction];
       if (!func) return;
@@ -138,16 +152,26 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
       let response;
       if (func.isEntry) {
         if (!privateKey) {
-          throw new Error('Private key is required for entry functions');
+          throw new Error("Private key is required for entry functions");
         }
-        response = await callFunction(selectedFunction, privateKey, functionParams);
+        response = await callFunction(
+          selectedFunction,
+          privateKey,
+          functionParams,
+        );
       } else {
         response = await callViewFunction(selectedFunction, functionParams);
       }
       setResult(JSON.stringify(response, null, 2));
     } catch (err) {
-      console.error('Function execution error:', err);
-      setResult(JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }, null, 2));
+      console.error("Function execution error:", err);
+      setResult(
+        JSON.stringify(
+          { error: err instanceof Error ? err.message : "Unknown error" },
+          null,
+          2,
+        ),
+      );
     }
   };
 
@@ -185,7 +209,7 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
               <label className="label">
                 <span className="label-text">Select Function</span>
               </label>
-              <select 
+              <select
                 className="select select-bordered w-full"
                 value={selectedFunction}
                 onChange={(e) => handleFunctionSelect(e.target.value)}
@@ -193,8 +217,8 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
                 <option value="">Select a function</option>
                 {Object.entries(functions).map(([name, func]) => (
                   <option key={name} value={name}>
-                    {name} ({func.params.slice(func.isEntry ? 1 : 0).join(', ')})
-                    {!func.isEntry && ` → ${func.return.join(', ')}`}
+                    {name} ({func.params.slice(func.isEntry ? 1 : 0).join(", ")}
+                    ){!func.isEntry && ` → ${func.return.join(", ")}`}
                   </option>
                 ))}
               </select>
@@ -204,7 +228,9 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
             {selectedFunction && functions[selectedFunction]?.isEntry && (
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Private Key (required for entry functions)</span>
+                  <span className="label-text">
+                    Private Key (required for entry functions)
+                  </span>
                 </label>
                 <input
                   type="password"
@@ -225,28 +251,32 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
                   .map((param, index) => (
                     <div key={index} className="form-control">
                       <label className="label">
-                        <span className="label-text">Parameter {index + 1}: {param}</span>
+                        <span className="label-text">
+                          Parameter {index + 1}: {param}
+                        </span>
                       </label>
                       <input
                         type="text"
                         className="input input-bordered"
-                        value={functionParams[index] || ''}
-                        onChange={(e) => handleParamChange(index, e.target.value)}
+                        value={functionParams[index] || ""}
+                        onChange={(e) =>
+                          handleParamChange(index, e.target.value)
+                        }
                         placeholder={`Enter ${param}...`}
                       />
                     </div>
                   ))}
-                
+
                 <button
-                  className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
+                  className={`btn btn-primary w-full ${loading ? "loading" : ""}`}
                   onClick={executeFunction}
                   disabled={loading}
                 >
-                  {loading ? 'Executing...' : 'Execute Function'}
+                  {loading ? "Executing..." : "Execute Function"}
                 </button>
               </div>
             )}
-            
+
             {/* Result Display */}
             {result && (
               <div className="mt-4">
@@ -270,4 +300,4 @@ export default function Contract({ address, network, isRead, moduleName, sourceC
       </div>
     </div>
   );
-} 
+}

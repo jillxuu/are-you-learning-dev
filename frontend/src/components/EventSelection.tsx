@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 interface EventSelectionProps {
   contractAddress: string;
@@ -13,7 +13,12 @@ interface Event {
   fields: { name: string; type: string }[];
 }
 
-export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNext }: EventSelectionProps) => {
+export const EventSelection = ({
+  contractAddress,
+  onEventsSelected,
+  onBack,
+  onNext,
+}: EventSelectionProps) => {
   const [selectedEvents, setSelectedEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,12 +29,14 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`https://fullnode.devnet.aptoslabs.com/v1/accounts/${contractAddress}/modules`);
+        const response = await fetch(
+          `https://fullnode.devnet.aptoslabs.com/v1/accounts/${contractAddress}/modules`,
+        );
         if (!response.ok) {
-          throw new Error('Failed to fetch contract modules');
+          throw new Error("Failed to fetch contract modules");
         }
         const modules = await response.json();
-        
+
         // Extract events from all modules
         const events: Event[] = [];
         modules.forEach((module: any) => {
@@ -41,17 +48,17 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
                 module: module.abi.name,
                 fields: struct.fields.map((field: any) => ({
                   name: field.name,
-                  type: field.type
-                }))
+                  type: field.type,
+                })),
               });
             }
           });
         });
-        
+
         setAvailableEvents(events);
       } catch (err) {
-        console.error('Error fetching events:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch events');
+        console.error("Error fetching events:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch events");
       } finally {
         setLoading(false);
       }
@@ -63,10 +70,14 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
   }, [contractAddress]);
 
   const handleEventToggle = (event: Event) => {
-    setSelectedEvents(prev => {
-      const isSelected = prev.some(e => e.name === event.name && e.module === event.module);
+    setSelectedEvents((prev) => {
+      const isSelected = prev.some(
+        (e) => e.name === event.name && e.module === event.module,
+      );
       if (isSelected) {
-        return prev.filter(e => !(e.name === event.name && e.module === event.module));
+        return prev.filter(
+          (e) => !(e.name === event.name && e.module === event.module),
+        );
       } else {
         return [...prev, event];
       }
@@ -75,10 +86,10 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
 
   const handleSubmit = () => {
     if (selectedEvents.length === 0) {
-      setError('Please select at least one event');
+      setError("Please select at least one event");
       return;
     }
-    onEventsSelected(selectedEvents.map(e => `${e.module}::${e.name}`));
+    onEventsSelected(selectedEvents.map((e) => `${e.module}::${e.name}`));
     onNext();
   };
 
@@ -93,7 +104,9 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
 
   return (
     <div className="flex flex-col h-full">
-      <h2 className="text-xl font-bold mb-4 text-center">Select Events to Process</h2>
+      <h2 className="text-xl font-bold mb-4 text-center">
+        Select Events to Process
+      </h2>
       <p className="text-sm opacity-70 mb-4 text-center">
         Select the events you want to process from the contract at address:
         <br />
@@ -103,7 +116,7 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
       <div className="flex-1 overflow-y-auto">
         <div className="space-y-4">
           {availableEvents.map((event) => (
-            <div 
+            <div
               key={`${event.module}::${event.name}`}
               className="card bg-base-200 shadow-xl cursor-pointer hover:bg-base-300"
               onClick={() => handleEventToggle(event)}
@@ -112,12 +125,16 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="card-title">{event.name}</h3>
-                    <p className="text-sm text-gray-500">Module: {event.module}</p>
+                    <p className="text-sm text-gray-500">
+                      Module: {event.module}
+                    </p>
                   </div>
                   <input
                     type="checkbox"
                     className="checkbox"
-                    checked={selectedEvents.some(e => e.name === event.name && e.module === event.module)}
+                    checked={selectedEvents.some(
+                      (e) => e.name === event.name && e.module === event.module,
+                    )}
                     onChange={() => handleEventToggle(event)}
                   />
                 </div>
@@ -125,7 +142,7 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
                   <p className="text-sm font-semibold">Fields:</p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {event.fields.map((field) => (
-                      <span 
+                      <span
                         key={field.name}
                         className="badge badge-primary"
                         title={field.type}
@@ -142,14 +159,11 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
       </div>
 
       <div className="flex justify-between mt-4">
-        <button 
-          className="btn"
-          onClick={onBack}
-        >
+        <button className="btn" onClick={onBack}>
           Back
         </button>
         <button
-          className={`btn btn-primary ${loading ? 'loading' : ''}`}
+          className={`btn btn-primary ${loading ? "loading" : ""}`}
           onClick={handleSubmit}
           disabled={loading || selectedEvents.length === 0}
         >
@@ -160,4 +174,4 @@ export const EventSelection = ({ contractAddress, onEventsSelected, onBack, onNe
   );
 };
 
-export default EventSelection; 
+export default EventSelection;

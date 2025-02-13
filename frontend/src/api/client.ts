@@ -1,4 +1,4 @@
-import { Aptos, Network, AptosConfig } from '@aptos-labs/ts-sdk';
+import { Aptos, Network, AptosConfig } from "@aptos-labs/ts-sdk";
 
 export enum ResponseErrorType {
   NOT_FOUND = "Not found",
@@ -32,14 +32,15 @@ export async function withResponseError<T>(promise: Promise<T>): Promise<T> {
 }
 
 export function getAptosClient(network: Network): Aptos {
-  const config = new AptosConfig({ 
+  const config = new AptosConfig({
     network,
-    fullnode: network === Network.MAINNET 
-      ? 'https://fullnode.mainnet.aptoslabs.com/v1'
-      : network === Network.TESTNET
-      ? 'https://fullnode.testnet.aptoslabs.com/v1'
-      : 'https://fullnode.devnet.aptoslabs.com/v1'
+    fullnode:
+      network === Network.MAINNET
+        ? "https://fullnode.mainnet.aptoslabs.com/v1"
+        : network === Network.TESTNET
+          ? "https://fullnode.testnet.aptoslabs.com/v1"
+          : "https://fullnode.devnet.aptoslabs.com/v1",
   });
 
   return new Aptos(config);
-} 
+}
