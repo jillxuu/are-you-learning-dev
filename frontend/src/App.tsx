@@ -18,7 +18,7 @@ import ContractDeployment from "./components/ContractDeployment";
 import ModulesPage from "./pages/Modules";
 import ModuleExplorer from "./pages/ModuleExplorer";
 import ProcessorPage from "./pages/ProcessorPage";
-import WorkshopsPage from "./pages/WorkshopsPage";
+import WorkshopsPage from "./features/workshops/pages/WorkshopsPage";
 
 const THEMES = [
   { name: "synthwave", label: "Synthwave" },

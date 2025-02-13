@@ -1,4 +1,4 @@
-import { Workshop } from "../types/workshop.ts";
+import { Workshop } from "../types/workshop";
 
 const STORAGE_KEY = "aptos_workshops";
 

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import WorkshopList from "../components/WorkshopList";
 import WorkshopEditor from "../components/WorkshopEditor";
 import WorkshopViewer from "../components/WorkshopViewer";
-import { Workshop } from "../types/workshop.ts";
+import { Workshop } from "../types/workshop";
 import {
   getWorkshops,
   getWorkshopById,

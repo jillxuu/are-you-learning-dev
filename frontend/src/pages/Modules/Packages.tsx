@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Network } from "@aptos-labs/ts-sdk";
 import { getAptosClient } from "../../api/client";
@@ -48,10 +48,11 @@ interface PackageContentProps {
 interface Props {
   address: string;
   network: Network;
-  packageName: string;
+  moduleName: string;
+  packageName?: string;
 }
 
-export default function Packages({ address, network, packageName }: Props) {
+export default function Packages({ address, network, moduleName }: Props) {
   const navigate = useNavigate();
   const selectedPackageName = useParams().selectedModuleName ?? "";
   const [packages, setPackages] = useState<PackageMetadata[]>([]);
@@ -77,7 +78,7 @@ export default function Packages({ address, network, packageName }: Props) {
 
         // Transform modules into package format
         const packageMetadata: PackageMetadata = {
-          name: packageName,
+          name: selectedPackageName,
           modules: modules.map((module) => ({
             name: module.abi?.name || "",
             source: module.bytecode || "",
