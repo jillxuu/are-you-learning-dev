@@ -43,7 +43,6 @@ async function getImageMetadata(
 async function ensureUploadDir() {
   try {
     await fs.mkdir(UPLOAD_DIR, { recursive: true });
-    console.log(`Upload directory ensured at ${UPLOAD_DIR}`);
   } catch (error) {
     console.error("Error creating upload directory:", error);
     throw error;

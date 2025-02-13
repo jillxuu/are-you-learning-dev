@@ -12,6 +12,7 @@ interface Props {
   onWorkshopSelect: (workshop: Workshop) => void;
   onWorkshopCreate: () => void;
   onWorkshopsChange: () => void;
+  onWorkshopEdit: (workshop: Workshop) => void;
 }
 
 export default function WorkshopList({
@@ -19,6 +20,7 @@ export default function WorkshopList({
   onWorkshopSelect,
   onWorkshopCreate,
   onWorkshopsChange,
+  onWorkshopEdit,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
@@ -128,6 +130,11 @@ export default function WorkshopList({
                       tabIndex={0}
                       className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52"
                     >
+                      <li>
+                        <button onClick={() => onWorkshopEdit(workshop)}>
+                          Edit
+                        </button>
+                      </li>
                       <li>
                         <button onClick={() => handleExport(workshop)}>
                           Export

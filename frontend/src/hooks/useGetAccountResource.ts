@@ -34,10 +34,11 @@ export interface ResponseError {
 }
 
 export function useGetAccountResource(
+  network: Network,
   address: string,
   resource: `${string}::${string}::${string}`,
 ): UseQueryResult<MoveResource, ResponseError> {
-  const client = getAptosClient(Network.DEVNET);
+  const client = getAptosClient(network);
 
   return useQuery<MoveResource, ResponseError>({
     queryKey: ["accountResource", { address, resource }],
@@ -73,8 +74,9 @@ export type RegistryData = {
   }>;
 };
 
-export function useGetAccountPackages(address: string) {
+export function useGetAccountPackages(network: Network, address: string) {
   const { data: registry } = useGetAccountResource(
+    network,
     address,
     "0x1::code::PackageRegistry" as `${string}::${string}::${string}`,
   );

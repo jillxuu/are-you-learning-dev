@@ -14,6 +14,8 @@ import {
   configureMonaco,
   createLineDescriptionDecorations,
 } from "../utils/monacoConfig";
+import { useNavigate } from "react-router-dom";
+import { AccountAddress } from "@aptos-labs/ts-sdk";
 
 interface Props {
   workshop: Workshop;
@@ -140,6 +142,7 @@ export default function WorkshopViewer({ workshop, onComplete }: Props) {
   const previousStep =
     currentStepIndex > 0 ? workshop.steps[currentStepIndex - 1] : null;
   const isLastStep = currentStepIndex === workshop.steps.length - 1;
+  const navigate = useNavigate();
 
   const handleEditorDidMount: OnMount = (editor) => {
     editorRef.current = editor;
@@ -205,9 +208,34 @@ export default function WorkshopViewer({ workshop, onComplete }: Props) {
     decorationsRef.current = model.deltaDecorations([], decorations);
   };
 
+  const handleComplete = () => {
+    if (workshop.contractAddress && workshop.aptosNetwork) {
+      try {
+        // Format the address using AccountAddress
+        const formattedAddress = AccountAddress.from(
+          workshop.contractAddress,
+        ).toString();
+
+        // Navigate directly to the modules page
+        navigate(`/modules/${formattedAddress}/code`, {
+          state: {
+            network: workshop.aptosNetwork,
+            address: formattedAddress,
+            fromWorkshop: true, // Add this flag to indicate we're coming from a workshop
+          },
+        });
+      } catch (err) {
+        console.error("Invalid contract address:", err);
+        onComplete?.();
+      }
+    } else {
+      onComplete?.();
+    }
+  };
+
   const handleNextStep = () => {
     if (isLastStep) {
-      onComplete?.();
+      handleComplete();
     } else {
       setCurrentStepIndex((prev) => prev + 1);
     }
@@ -292,26 +320,6 @@ export default function WorkshopViewer({ workshop, onComplete }: Props) {
               </div>
             )}
 
-            {/* Additional Step Images */}
-            {currentStep.images && currentStep.images.length > 0 && (
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {currentStep.images.map((image, index) => (
-                  <figure key={index} className="relative">
-                    <img
-                      src={image.url}
-                      alt={image.altText || `Additional image ${index + 1}`}
-                      className="rounded-lg w-full h-48 object-cover bg-base-200"
-                    />
-                    {image.caption && (
-                      <figcaption className="text-center mt-2 text-base-content/70">
-                        {image.caption}
-                      </figcaption>
-                    )}
-                  </figure>
-                ))}
-              </div>
-            )}
-
             <div className="flex gap-4">
               <div className="flex-1 h-[60vh] border rounded-lg overflow-hidden">
                 {currentStep.diffWithPreviousStep &&
@@ -322,88 +330,7 @@ export default function WorkshopViewer({ workshop, onComplete }: Props) {
                     originalCode={previousStep.sourceCode}
                     modifiedCode={currentStep.sourceCode}
                     onMount={handleDiffEditorDidMount}
-                    beforeMount={(monaco) => {
-                      // Register the Move language
-                      monaco.languages.register({ id: "move" });
-
-                      // Set up Move language syntax highlighting
-                      monaco.languages.setMonarchTokensProvider("move", {
-                        defaultToken: "",
-                        tokenPostfix: ".move",
-                        keywords: [
-                          "public",
-                          "entry",
-                          "fun",
-                          "struct",
-                          "has",
-                          "key",
-                          "store",
-                          "copy",
-                          "drop",
-                          "module",
-                          "use",
-                          "script",
-                          "friend",
-                          "native",
-                          "const",
-                          "let",
-                        ],
-                        typeKeywords: [
-                          "u8",
-                          "u64",
-                          "u128",
-                          "bool",
-                          "address",
-                          "vector",
-                          "signer",
-                        ],
-
-                        tokenizer: {
-                          root: [
-                            [
-                              /[a-zA-Z_$][\w$]*/,
-                              {
-                                cases: {
-                                  "@keywords": { token: "keyword" },
-                                  "@typeKeywords": { token: "type" },
-                                  "@default": { token: "identifier" },
-                                },
-                              },
-                            ],
-                            [/#\[[^\]]*\]/, { token: "attribute" }],
-                            [/\/\/.*$/, { token: "comment" }],
-                            [/"/, { token: "string", next: "@string" }],
-                            [/\d+/, { token: "number" }],
-                          ],
-                          string: [
-                            [/[^"]+/, { token: "string" }],
-                            [/"/, { token: "string", next: "@pop" }],
-                          ],
-                        },
-                      });
-
-                      // Set up theme
-                      monaco.editor.defineTheme("move-dark", {
-                        base: "vs-dark",
-                        inherit: true,
-                        rules: [
-                          { token: "keyword", foreground: "C586C0" },
-                          { token: "type", foreground: "4EC9B0" },
-                          { token: "identifier", foreground: "9CDCFE" },
-                          { token: "number", foreground: "B5CEA8" },
-                          { token: "string", foreground: "CE9178" },
-                          { token: "comment", foreground: "6A9955" },
-                        ],
-                        colors: {
-                          "editor.background": "#1E1E1E",
-                          "editor.foreground": "#D4D4D4",
-                          "editor.lineHighlightBackground": "#2F3337",
-                          "editor.selectionBackground": "#264F78",
-                          "editor.inactiveSelectionBackground": "#3A3D41",
-                        },
-                      });
-                      monaco.editor.setTheme("move-dark");
-                    }}
+                    beforeMount={configureMonaco}
                     options={{
                       readOnly: true,
                       minimap: { enabled: true },
@@ -422,88 +349,7 @@ export default function WorkshopViewer({ workshop, onComplete }: Props) {
                     key={`regular-${editorKey}`}
                     sourceCode={currentStep.sourceCode}
                     onMount={handleEditorDidMount}
-                    beforeMount={(monaco) => {
-                      // Register the Move language
-                      monaco.languages.register({ id: "move" });
-
-                      // Set up Move language syntax highlighting
-                      monaco.languages.setMonarchTokensProvider("move", {
-                        defaultToken: "",
-                        tokenPostfix: ".move",
-                        keywords: [
-                          "public",
-                          "entry",
-                          "fun",
-                          "struct",
-                          "has",
-                          "key",
-                          "store",
-                          "copy",
-                          "drop",
-                          "module",
-                          "use",
-                          "script",
-                          "friend",
-                          "native",
-                          "const",
-                          "let",
-                        ],
-                        typeKeywords: [
-                          "u8",
-                          "u64",
-                          "u128",
-                          "bool",
-                          "address",
-                          "vector",
-                          "signer",
-                        ],
-
-                        tokenizer: {
-                          root: [
-                            [
-                              /[a-zA-Z_$][\w$]*/,
-                              {
-                                cases: {
-                                  "@keywords": { token: "keyword" },
-                                  "@typeKeywords": { token: "type" },
-                                  "@default": { token: "identifier" },
-                                },
-                              },
-                            ],
-                            [/#\[[^\]]*\]/, { token: "attribute" }],
-                            [/\/\/.*$/, { token: "comment" }],
-                            [/"/, { token: "string", next: "@string" }],
-                            [/\d+/, { token: "number" }],
-                          ],
-                          string: [
-                            [/[^"]+/, { token: "string" }],
-                            [/"/, { token: "string", next: "@pop" }],
-                          ],
-                        },
-                      });
-
-                      // Set up theme
-                      monaco.editor.defineTheme("move-dark", {
-                        base: "vs-dark",
-                        inherit: true,
-                        rules: [
-                          { token: "keyword", foreground: "C586C0" },
-                          { token: "type", foreground: "4EC9B0" },
-                          { token: "identifier", foreground: "9CDCFE" },
-                          { token: "number", foreground: "B5CEA8" },
-                          { token: "string", foreground: "CE9178" },
-                          { token: "comment", foreground: "6A9955" },
-                        ],
-                        colors: {
-                          "editor.background": "#1E1E1E",
-                          "editor.foreground": "#D4D4D4",
-                          "editor.lineHighlightBackground": "#2F3337",
-                          "editor.selectionBackground": "#264F78",
-                          "editor.inactiveSelectionBackground": "#3A3D41",
-                        },
-                      });
-                      monaco.editor.setTheme("move-dark");
-                    }}
+                    beforeMount={configureMonaco}
                     options={{
                       readOnly: true,
                       minimap: { enabled: true },

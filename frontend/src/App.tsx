@@ -48,30 +48,6 @@ function App() {
   const [showPrivateKeyModal, setShowPrivateKeyModal] = useState(false);
   const [tempPrivateKey, setTempPrivateKey] = useState("");
 
-  // Load Move code when component mounts
-  useEffect(() => {
-    fetch(`/api/code/${moduleName}.move`)
-      .then((response) => response.text())
-      .then((moveCode) => {
-        setCode(moveCode);
-        setOriginalCode(moveCode);
-
-        // Create a clean version without editable markers
-        const cleanedCode = moveCode
-          .split("\n")
-          .filter(
-            (line) =>
-              !line.includes("// @editable-begin") &&
-              !line.includes("// @editable-end"),
-          )
-          .join("\n");
-        setCleanCode(cleanedCode);
-      })
-      .catch((error) => {
-        console.error("Failed to load Move code:", error);
-      });
-  }, []);
-
   const handleCodeChange = (newCode: string) => {
     setCode(newCode);
   };
@@ -152,6 +128,9 @@ function App() {
           </a>
         </div>
         <div className="navbar-center">
+          <a className="btn btn-ghost" onClick={() => navigate("/workshops")}>
+            Move Workshops
+          </a>
           <a className="btn btn-ghost" onClick={() => navigate("/learn")}>
             Move Reading
           </a>
@@ -204,8 +183,12 @@ function App() {
           <Route path="/" element={<Navigate to="/workshops" replace />} />
           <Route path="/workshops" element={<WorkshopsPage />} />
           <Route path="/workshops/:workshopId" element={<WorkshopsPage />} />
+          <Route
+            path="/workshops/:workshopId/edit"
+            element={<WorkshopsPage />}
+          />
           <Route path="/modules" element={<ModulesPage />} />
-          <Route path="/modules/:address/code" element={<ModuleExplorer />} />
+          <Route path="/explorer" element={<ModuleExplorer />} />
           <Route
             path="/learn"
             element={

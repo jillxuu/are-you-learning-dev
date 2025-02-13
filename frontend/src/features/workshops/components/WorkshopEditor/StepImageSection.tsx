@@ -5,9 +5,7 @@ import { imageService } from "../../services/imageService";
 
 interface StepImageSectionProps {
   mainImage?: ImageData;
-  images: ImageData[];
   onMainImageChange: (image: ImageData | undefined) => void;
-  onImagesChange: (images: ImageData[]) => void;
   className?: string;
 }
 

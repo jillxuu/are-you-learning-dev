@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import Editor, { OnMount } from "@monaco-editor/react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Workshop, WorkshopStep, LineDescription } from "../types/workshop.ts";
 import { parseLineNumbers } from "../utils/lineUtils";
 import { StepImageSection } from "./WorkshopEditor/StepImageSection";
@@ -12,6 +11,7 @@ import {
   createLineDescriptionDecorations,
 } from "../utils/monacoConfig";
 import * as monaco from "monaco-editor";
+import { Network } from "@aptos-labs/ts-sdk";
 
 interface Props {
   workshop?: Workshop;
@@ -22,27 +22,45 @@ export default function WorkshopEditor({
   workshop: initialWorkshop,
   onSave,
 }: Props) {
-  const [workshop, setWorkshop] = useState<Workshop>(
-    () =>
-      initialWorkshop || {
-        id: crypto.randomUUID(),
-        title: "New Workshop",
-        description: "Workshop description",
-        author: "",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        steps: [],
-      },
-  );
+  const navigate = useNavigate();
+  const [workshop, setWorkshop] = useState<Workshop>(() => {
+    const newWorkshop = initialWorkshop || {
+      id: crypto.randomUUID(),
+      title: "New Workshop",
+      description: "Workshop description",
+      author: "",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      steps: [],
+    };
+
+    // Update URL with workshop ID if it's a new workshop
+    if (!initialWorkshop) {
+      navigate(`/workshops/${newWorkshop.id}/edit`, { replace: true });
+    }
+
+    return newWorkshop;
+  });
 
   const [selectedStepIndex, setSelectedStepIndex] = useState<number>(-1);
-  const [previewMode, setPreviewMode] = useState(false);
   const [activeDescription, setActiveDescription] = useState<{
     content: string;
     position: { top: number; left: number };
   } | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const decorationsRef = useRef<string[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [aptosNetwork, setAptosNetwork] = useState("");
+  const [contractAddress, setContractAddress] = useState("");
+  const [showContractForm, setShowContractForm] = useState(false);
+
+  const handleSelectStep = (index: number) => {
+    // Force a clean state by explicitly setting undefined first
+    setSelectedStepIndex(-1);
+    setTimeout(() => {
+      setSelectedStepIndex(index);
+    }, 0);
+  };
 
   const handleAddStep = () => {
     const newStep: WorkshopStep = {
@@ -53,15 +71,19 @@ export default function WorkshopEditor({
       lineDescriptions: [],
       diffWithPreviousStep: false,
       mainImage: undefined,
-      images: [],
     };
 
-    setWorkshop((prev) => ({
-      ...prev,
-      steps: [...prev.steps, newStep],
-      updatedAt: Date.now(),
-    }));
-    setSelectedStepIndex(workshop.steps.length);
+    setWorkshop((prev) => {
+      const updatedWorkshop = {
+        ...prev,
+        steps: [...prev.steps, { ...newStep }],
+        updatedAt: Date.now(),
+      };
+      return updatedWorkshop;
+    });
+
+    // Use the new handleSelectStep function
+    handleSelectStep(workshop.steps.length);
   };
 
   const handleUpdateStep = (
@@ -99,7 +121,33 @@ export default function WorkshopEditor({
   };
 
   const handleSave = () => {
+    setIsModalOpen(true);
+    setShowContractForm(false); // Reset the form view state
+  };
+
+  const handleModalSubmit = () => {
+    const updatedWorkshop = {
+      ...workshop,
+      ...(aptosNetwork && contractAddress
+        ? {
+            aptosNetwork: aptosNetwork as Network,
+            contractAddress,
+          }
+        : {}),
+    };
+    setWorkshop(updatedWorkshop);
+    setIsModalOpen(false);
+    setShowContractForm(false);
+    onSave(updatedWorkshop);
+    // Navigate to the workshop edit page after saving
+    navigate(`/workshops/${updatedWorkshop.id}/edit`, { replace: true });
+  };
+
+  const handleDirectSave = () => {
+    setIsModalOpen(false);
     onSave(workshop);
+    // Navigate to the workshop edit page after saving
+    navigate(`/workshops/${workshop.id}/edit`, { replace: true });
   };
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
@@ -117,9 +165,6 @@ export default function WorkshopEditor({
       ].lineDescriptions.find((desc) => desc.lines.includes(lineNumber));
 
       if (description) {
-        const lineHeight = editor.getOption(
-          monaco.editor.EditorOption.lineHeight,
-        );
         const editorPos = editor.getContainerDomNode().getBoundingClientRect();
         const linePos = editor.getScrolledVisiblePosition(position);
 
@@ -166,7 +211,27 @@ export default function WorkshopEditor({
     <div className="min-h-screen flex flex-col">
       {/* Navbar */}
       <div className="navbar bg-base-200 px-4 shadow-sm sticky top-0 z-50">
-        <div className="flex-1">
+        <div className="flex-1 gap-4">
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              navigate("/");
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Back to Workshops
+          </button>
           <input
             type="text"
             className="input input-ghost text-xl font-bold"
@@ -182,12 +247,6 @@ export default function WorkshopEditor({
           />
         </div>
         <div className="flex-none gap-2">
-          <button
-            className={`btn ${previewMode ? "btn-primary" : ""}`}
-            onClick={() => setPreviewMode(!previewMode)}
-          >
-            {previewMode ? "Edit" : "Preview"}
-          </button>
           <button className="btn btn-primary" onClick={handleSave}>
             Save Workshop
           </button>
@@ -216,7 +275,7 @@ export default function WorkshopEditor({
                       ? "bg-primary/10 border-2 border-primary"
                       : "bg-base-200"
                   }`}
-                  onClick={() => setSelectedStepIndex(index)}
+                  onClick={() => handleSelectStep(index)}
                 >
                   <div className="flex justify-between items-center">
                     <h3 className="font-medium">{step.title}</h3>
@@ -362,13 +421,9 @@ export default function WorkshopEditor({
                 </label>
                 <StepImageSection
                   mainImage={workshop.steps[selectedStepIndex].mainImage}
-                  images={workshop.steps[selectedStepIndex].images}
-                  onMainImageChange={(image) =>
-                    handleUpdateStep(selectedStepIndex, { mainImage: image })
-                  }
-                  onImagesChange={(images) =>
-                    handleUpdateStep(selectedStepIndex, { images })
-                  }
+                  onMainImageChange={(image) => {
+                    handleUpdateStep(selectedStepIndex, { mainImage: image });
+                  }}
                   className="mb-4"
                 />
               </div>
@@ -515,47 +570,113 @@ export default function WorkshopEditor({
             </div>
           )}
         </div>
-
-        {/* Right sidebar - Preview */}
-        {previewMode && (
-          <div className="w-1/3 bg-base-100 border-l border-base-300 sticky top-16 h-[calc(100vh-4rem)]">
-            <div className="p-4 h-full overflow-y-auto">
-              <h2 className="text-xl font-bold mb-4">Preview</h2>
-              {selectedStepIndex === -1 ? (
-                <div className="prose">
-                  <h1>{workshop.title}</h1>
-                  <p className="text-sm text-base-content/70">
-                    by {workshop.author}
-                  </p>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {workshop.description}
-                  </ReactMarkdown>
-                </div>
-              ) : (
-                <div className="prose">
-                  <h2>{workshop.steps[selectedStepIndex].title}</h2>
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {workshop.steps[selectedStepIndex].description}
-                  </ReactMarkdown>
-                  <div className="not-prose">
-                    <Editor
-                      height="300px"
-                      defaultLanguage="move"
-                      language="move"
-                      value={workshop.steps[selectedStepIndex].sourceCode}
-                      theme="vs-dark"
-                      options={{
-                        readOnly: true,
-                        minimap: { enabled: false },
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Replace the Modal component with DaisyUI modal */}
+      <dialog
+        id="contract_modal"
+        className={`modal ${isModalOpen ? "modal-open" : ""}`}
+      >
+        <div className="modal-box">
+          <form method="dialog">
+            <button
+              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+              onClick={() => setIsModalOpen(false)}
+            >
+              ✕
+            </button>
+          </form>
+
+          {!showContractForm ? (
+            <>
+              <h3 className="font-bold text-lg mb-6">
+                Would you like to add contract deployment details?
+              </h3>
+              <p className="text-sm mb-6">
+                This will allow learners to be redirected to the deployed
+                contract after completing the workshop.
+              </p>
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-ghost mr-2"
+                    onClick={handleDirectSave}
+                  >
+                    No, Save Without Contract
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowContractForm(true)}
+                  >
+                    Yes, Add Contract Details
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="font-bold text-lg mb-6">
+                Add Contract Deployment Details
+              </h3>
+              <div className="space-y-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">
+                      Aptos Network
+                    </span>
+                  </label>
+                  <select
+                    className="select select-bordered w-full"
+                    value={aptosNetwork}
+                    onChange={(e) => setAptosNetwork(e.target.value)}
+                  >
+                    <option value="">Select Network</option>
+                    <option value={Network.DEVNET}>Devnet</option>
+                    <option value={Network.TESTNET}>Testnet</option>
+                    <option value={Network.MAINNET}>Mainnet</option>
+                  </select>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">
+                      Contract Address
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={contractAddress}
+                    onChange={(e) => setContractAddress(e.target.value)}
+                    placeholder="Enter Contract Address (0x...)"
+                  />
+                </div>
+              </div>
+
+              <div className="modal-action">
+                <form method="dialog">
+                  <button
+                    className="btn btn-ghost mr-2"
+                    onClick={() => setShowContractForm(false)}
+                  >
+                    Back
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleModalSubmit}
+                    disabled={!aptosNetwork || !contractAddress}
+                  >
+                    Save
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={() => setIsModalOpen(false)}>close</button>
+        </form>
+      </dialog>
     </div>
   );
 }

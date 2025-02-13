@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Contract from "./Contract";
 import ViewCode from "./ViewCode";
 import Packages from "./Packages";
@@ -18,15 +18,27 @@ interface Props {
 
 export default function ModulesPage({
   contractAddress,
-  network = Network.DEVNET,
+  network: propNetwork,
 }: Props) {
   const navigate = useNavigate();
   const { address, view, selectedModuleName } = useParams();
+  const location = useLocation();
   const [modules, setModules] = useState<MoveModuleBytecode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("code");
   const [moduleSource, setModuleSource] = useState<string>("");
+
+  // Determine the network to use, prioritizing state from navigation
+  const network = location.state?.network || propNetwork || Network.DEVNET;
+
+  // If we don't have a contract address and we're not coming from a workshop, show the explorer
+  useEffect(() => {
+    const addr = contractAddress || address;
+    if (!addr && !location.state?.fromWorkshop) {
+      navigate("/explorer");
+    }
+  }, [contractAddress, address, location.state, navigate]);
 
   useEffect(() => {
     const fetchModules = async () => {
@@ -52,7 +64,9 @@ export default function ModulesPage({
           modulesList.length > 0 &&
           modulesList[0].abi?.name
         ) {
-          navigate(`/modules/${addr}/code/${modulesList[0].abi.name}`);
+          navigate(`/modules/${addr}/code/${modulesList[0].abi.name}`, {
+            state: { ...location.state }, // Preserve the state when navigating
+          });
         }
       } catch (err) {
         console.error("Failed to fetch modules:", err);
@@ -65,18 +79,29 @@ export default function ModulesPage({
     };
 
     fetchModules();
-  }, [contractAddress, address, network, selectedModuleName, navigate]);
+  }, [
+    contractAddress,
+    address,
+    network,
+    selectedModuleName,
+    navigate,
+    location.state,
+  ]);
 
   const handleModuleChange = (moduleName: string) => {
     if (moduleName) {
-      navigate(`/modules/${address}/code/${moduleName}`);
+      navigate(`/modules/${address}/code/${moduleName}`, {
+        state: { ...location.state }, // Preserve the state when navigating
+      });
     }
   };
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (selectedModuleName) {
-      navigate(`/modules/${address}/${tab}/${selectedModuleName}`);
+      navigate(`/modules/${address}/${tab}/${selectedModuleName}`, {
+        state: { ...location.state }, // Preserve the state when navigating
+      });
     }
   };
 

@@ -28,7 +28,10 @@ export default function ViewCode({
   moduleName,
   onSourceUpdate,
 }: Props) {
-  const sortedPackages: PackageMetadata[] = useGetAccountPackages(address);
+  const sortedPackages: PackageMetadata[] = useGetAccountPackages(
+    network,
+    address,
+  );
   const [moduleSource, setModuleSource] = useState<ModuleSource | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

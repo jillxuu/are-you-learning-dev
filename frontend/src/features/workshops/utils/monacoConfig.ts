@@ -148,7 +148,7 @@ export const MOVE_THEME: monaco.editor.IStandaloneThemeData = {
 // Default editor options
 export const DEFAULT_EDITOR_OPTIONS: monaco.editor.IStandaloneEditorConstructionOptions =
   {
-    readOnly: true,
+    readOnly: false,
     minimap: { enabled: true },
     lineNumbers: "on",
     scrollBeyondLastLine: false,

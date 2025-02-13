@@ -1,3 +1,5 @@
+import { Network } from "@aptos-labs/ts-sdk";
+
 export interface ImageData {
   url: string;
   caption?: string;
@@ -20,7 +22,6 @@ export interface WorkshopStep {
   lineDescriptions: LineDescription[]; // Line-specific descriptions
   diffWithPreviousStep: boolean;
   mainImage?: ImageData; // Main image for the step
-  images: ImageData[]; // Additional images for the step
 }
 
 export interface Workshop {
@@ -32,6 +33,8 @@ export interface Workshop {
   updatedAt: number;
   steps: WorkshopStep[];
   coverImage?: ImageData; // Cover image for the workshop
+  aptosNetwork?: Network; // Aptos network for contract deployment
+  contractAddress?: string; // Contract address for deployment
 }
 
 // Image upload response from the backend

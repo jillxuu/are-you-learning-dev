@@ -30,12 +30,22 @@ export default function WorkshopsPage() {
       const workshop = getWorkshopById(workshopId);
       if (workshop) {
         setSelectedWorkshop(workshop);
-        setMode("view");
+        if (window.location.pathname.endsWith("/edit")) {
+          setMode("edit");
+        } else {
+          setMode("view");
+        }
       } else {
         navigate("/workshops");
       }
     }
   }, [workshopId, navigate]);
+
+  useEffect(() => {
+    if (window.location.pathname === "/") {
+      navigate("/workshops");
+    }
+  }, [navigate]);
 
   const loadWorkshops = () => {
     const loadedWorkshops = getWorkshops();
@@ -51,6 +61,8 @@ export default function WorkshopsPage() {
   const handleWorkshopCreate = () => {
     setSelectedWorkshop(null);
     setMode("edit");
+    const newWorkshopId = crypto.randomUUID();
+    navigate(`/workshops/${newWorkshopId}/edit`);
   };
 
   const handleWorkshopSave = (workshop: Workshop) => {
@@ -65,6 +77,12 @@ export default function WorkshopsPage() {
     navigate("/workshops");
   };
 
+  const handleWorkshopEdit = (workshop: Workshop) => {
+    setSelectedWorkshop(workshop);
+    setMode("edit");
+    navigate(`/workshops/${workshop.id}/edit`);
+  };
+
   const renderContent = () => {
     switch (mode) {
       case "list":
@@ -74,6 +92,7 @@ export default function WorkshopsPage() {
             onWorkshopSelect={handleWorkshopSelect}
             onWorkshopCreate={handleWorkshopCreate}
             onWorkshopsChange={loadWorkshops}
+            onWorkshopEdit={handleWorkshopEdit}
           />
         );
       case "edit":
