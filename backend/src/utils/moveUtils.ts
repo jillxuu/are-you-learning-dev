@@ -68,7 +68,7 @@ export const publishMovePackage = async (options: {
     return {
       success: false,
       error:
-        "Private key is required. Set VITE_APTOS_PRIVATE_KEY in your .env file or pass it as an option.",
+        "Private key is required. Set APTOS_PRIVATE_KEY in your .env file or pass it as an option.",
     };
   }
 

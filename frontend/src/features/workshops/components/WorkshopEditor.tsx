@@ -1,9 +1,17 @@
-import { useState } from "react";
-import Editor from "@monaco-editor/react";
+import { useState, useRef } from "react";
+import Editor, { OnMount } from "@monaco-editor/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Workshop, WorkshopStep, LineDescription } from "../types/workshop.ts";
 import { parseLineNumbers } from "../utils/lineUtils";
+import { StepImageSection } from "./WorkshopEditor/StepImageSection";
+import { LineDescriptionImageSection } from "./WorkshopEditor/LineDescriptionImageSection";
+import {
+  configureMonaco,
+  DEFAULT_EDITOR_OPTIONS,
+  createLineDescriptionDecorations,
+} from "../utils/monacoConfig";
+import * as monaco from "monaco-editor";
 
 interface Props {
   workshop?: Workshop;
@@ -29,6 +37,12 @@ export default function WorkshopEditor({
 
   const [selectedStepIndex, setSelectedStepIndex] = useState<number>(-1);
   const [previewMode, setPreviewMode] = useState(false);
+  const [activeDescription, setActiveDescription] = useState<{
+    content: string;
+    position: { top: number; left: number };
+  } | null>(null);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const decorationsRef = useRef<string[]>([]);
 
   const handleAddStep = () => {
     const newStep: WorkshopStep = {
@@ -36,9 +50,10 @@ export default function WorkshopEditor({
       title: `Step ${workshop.steps.length + 1}`,
       description: "Step description",
       sourceCode: "",
-      highlightedLines: [],
       lineDescriptions: [],
       diffWithPreviousStep: false,
+      mainImage: undefined,
+      images: [],
     };
 
     setWorkshop((prev) => ({
@@ -85,6 +100,66 @@ export default function WorkshopEditor({
 
   const handleSave = () => {
     onSave(workshop);
+  };
+
+  const handleEditorDidMount: OnMount = (editor, monaco) => {
+    editorRef.current = editor;
+    updateEditorDecorations();
+
+    // Add hover listener for line descriptions
+    editor.onMouseMove((e: monaco.editor.IEditorMouseEvent) => {
+      const position = e.target.position;
+      if (!position) return;
+
+      const lineNumber = position.lineNumber;
+      const description = workshop.steps[
+        selectedStepIndex
+      ].lineDescriptions.find((desc) => desc.lines.includes(lineNumber));
+
+      if (description) {
+        const lineHeight = editor.getOption(
+          monaco.editor.EditorOption.lineHeight,
+        );
+        const editorPos = editor.getContainerDomNode().getBoundingClientRect();
+        const linePos = editor.getScrolledVisiblePosition(position);
+
+        if (linePos) {
+          setActiveDescription({
+            content: description.content,
+            position: {
+              top: editorPos.top + linePos.top - 10,
+              left: editorPos.left + linePos.left,
+            },
+          });
+        }
+      } else {
+        setActiveDescription(null);
+      }
+    });
+
+    editor.onMouseLeave(() => {
+      setActiveDescription(null);
+    });
+  };
+
+  const updateEditorDecorations = () => {
+    const editor = editorRef.current;
+    if (!editor || !workshop.steps[selectedStepIndex]) return;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    // Clear existing decorations using the stored IDs
+    if (decorationsRef.current.length > 0) {
+      model.deltaDecorations(decorationsRef.current, []);
+      decorationsRef.current = [];
+    }
+
+    // Create new decorations
+    const decorations = createLineDescriptionDecorations(
+      workshop.steps[selectedStepIndex].lineDescriptions,
+    );
+    decorationsRef.current = model.deltaDecorations([], decorations);
   };
 
   return (
@@ -273,109 +348,28 @@ export default function WorkshopEditor({
                       handleUpdateStep(selectedStepIndex, { sourceCode: value })
                     }
                     theme="move-dark"
-                    beforeMount={(monaco) => {
-                      // Register the Move language
-                      monaco.languages.register({ id: "move" });
-
-                      // Set up Move language syntax highlighting
-                      monaco.languages.setMonarchTokensProvider("move", {
-                        defaultToken: "",
-                        tokenPostfix: ".move",
-                        keywords: [
-                          "public",
-                          "entry",
-                          "fun",
-                          "struct",
-                          "has",
-                          "key",
-                          "store",
-                          "copy",
-                          "drop",
-                          "module",
-                          "use",
-                          "script",
-                          "friend",
-                          "native",
-                          "const",
-                          "let",
-                        ],
-                        typeKeywords: [
-                          "u8",
-                          "u64",
-                          "u128",
-                          "bool",
-                          "address",
-                          "vector",
-                          "signer",
-                        ],
-
-                        tokenizer: {
-                          root: [
-                            [
-                              /[a-zA-Z_$][\w$]*/,
-                              {
-                                cases: {
-                                  "@keywords": { token: "keyword" },
-                                  "@typeKeywords": { token: "type" },
-                                  "@default": { token: "identifier" },
-                                },
-                              },
-                            ],
-                            [/#\[[^\]]*\]/, { token: "attribute" }],
-                            [/\/\/.*$/, { token: "comment" }],
-                            [/"/, { token: "string", next: "@string" }],
-                            [/\d+/, { token: "number" }],
-                          ],
-                          string: [
-                            [/[^"]+/, { token: "string" }],
-                            [/"/, { token: "string", next: "@pop" }],
-                          ],
-                        },
-                      });
-
-                      // Set up theme
-                      monaco.editor.defineTheme("move-dark", {
-                        base: "vs-dark",
-                        inherit: true,
-                        rules: [
-                          { token: "keyword", foreground: "C586C0" },
-                          { token: "type", foreground: "4EC9B0" },
-                          { token: "identifier", foreground: "9CDCFE" },
-                          { token: "number", foreground: "B5CEA8" },
-                          { token: "string", foreground: "CE9178" },
-                          { token: "comment", foreground: "6A9955" },
-                        ],
-                        colors: {
-                          "editor.background": "#1E1E1E",
-                          "editor.foreground": "#D4D4D4",
-                          "editor.lineHighlightBackground": "#2F3337",
-                          "editor.selectionBackground": "#264F78",
-                          "editor.inactiveSelectionBackground": "#3A3D41",
-                        },
-                      });
-                      monaco.editor.setTheme("move-dark");
-                    }}
+                    beforeMount={configureMonaco}
+                    options={DEFAULT_EDITOR_OPTIONS}
+                    onMount={handleEditorDidMount}
                   />
                 </div>
               </div>
 
+              {/* Add Step Images Section */}
               <div className="form-control w-full mb-4">
                 <label className="label">
-                  <span className="label-text">Highlighted Lines</span>
+                  <span className="label-text">Step Images</span>
                 </label>
-                <input
-                  type="text"
-                  className="input input-bordered"
-                  defaultValue={workshop.steps[
-                    selectedStepIndex
-                  ].highlightedLines.join(", ")}
-                  onChange={(e) => {
-                    const lines = parseLineNumbers(e.target.value);
-                    handleUpdateStep(selectedStepIndex, {
-                      highlightedLines: lines,
-                    });
-                  }}
-                  placeholder="Example: 1, 3, 5-10"
+                <StepImageSection
+                  mainImage={workshop.steps[selectedStepIndex].mainImage}
+                  images={workshop.steps[selectedStepIndex].images}
+                  onMainImageChange={(image) =>
+                    handleUpdateStep(selectedStepIndex, { mainImage: image })
+                  }
+                  onImagesChange={(images) =>
+                    handleUpdateStep(selectedStepIndex, { images })
+                  }
+                  className="mb-4"
                 />
               </div>
 
@@ -467,6 +461,30 @@ export default function WorkshopEditor({
                               });
                             }}
                             placeholder="Describe these lines..."
+                          />
+                        </div>
+                        {/* Add Line Description Image Section */}
+                        <div className="form-control w-full mt-2">
+                          <label className="label">
+                            <span className="label-text">
+                              Description Image
+                            </span>
+                          </label>
+                          <LineDescriptionImageSection
+                            lineDescription={desc}
+                            onImageChange={(image) => {
+                              const updatedDescriptions = [
+                                ...workshop.steps[selectedStepIndex]
+                                  .lineDescriptions,
+                              ];
+                              updatedDescriptions[index] = {
+                                ...desc,
+                                image,
+                              };
+                              handleUpdateStep(selectedStepIndex, {
+                                lineDescriptions: updatedDescriptions,
+                              });
+                            }}
                           />
                         </div>
                       </div>

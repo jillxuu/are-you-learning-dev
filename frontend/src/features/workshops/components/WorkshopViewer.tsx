@@ -10,6 +10,10 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Workshop } from "../types/workshop.ts";
 import { generateWorkshopUrl } from "../services/workshopService";
+import {
+  configureMonaco,
+  createLineDescriptionDecorations,
+} from "../utils/monacoConfig";
 
 interface Props {
   workshop: Workshop;
@@ -37,6 +41,20 @@ interface DescriptionPopupProps {
   onClose: () => void;
 }
 
+const DEFAULT_EDITOR_OPTIONS: monaco.editor.IStandaloneEditorConstructionOptions =
+  {
+    readOnly: true,
+    minimap: { enabled: true },
+    lineNumbers: "on" as const,
+    scrollBeyondLastLine: false,
+    fontSize: 14,
+    tabSize: 4,
+    occurrencesHighlight: "singleFile",
+    glyphMargin: true,
+    renderLineHighlight: "none",
+    lineDecorationsWidth: 5,
+  };
+
 const RegularEditor = ({
   sourceCode,
   onMount,
@@ -50,8 +68,11 @@ const RegularEditor = ({
     language="move"
     theme="move-dark"
     onMount={onMount}
-    beforeMount={beforeMount}
-    options={options}
+    beforeMount={configureMonaco}
+    options={{
+      ...DEFAULT_EDITOR_OPTIONS,
+      ...options,
+    }}
   />
 );
 
@@ -69,8 +90,9 @@ const CodeDiffEditor = ({
     language="move"
     theme="move-dark"
     onMount={onMount}
-    beforeMount={beforeMount}
+    beforeMount={configureMonaco}
     options={{
+      ...DEFAULT_EDITOR_OPTIONS,
       ...options,
       renderSideBySide: true,
       enableSplitViewResizing: true,
@@ -176,27 +198,11 @@ export default function WorkshopViewer({ workshop, onComplete }: Props) {
       decorationsRef.current = [];
     }
 
-    // Add highlighted line decorations
-    const highlightDecorations = currentStep.highlightedLines.map(
-      (lineNumber) => ({
-        range: new monaco.Range(lineNumber, 1, lineNumber, 1),
-        options: {
-          isWholeLine: true,
-          className: "bg-primary bg-opacity-20",
-          overviewRuler: {
-            color: "rgb(147, 51, 234)",
-            position: monaco.editor.OverviewRulerLane.Center,
-          },
-          minimap: {
-            color: "rgb(147, 51, 234)",
-            position: monaco.editor.MinimapPosition.Inline,
-          },
-        },
-      }),
+    // Create new decorations
+    const decorations = createLineDescriptionDecorations(
+      currentStep.lineDescriptions,
     );
-
-    // Apply the highlight decorations and store the IDs
-    decorationsRef.current = model.deltaDecorations([], highlightDecorations);
+    decorationsRef.current = model.deltaDecorations([], decorations);
   };
 
   const handleNextStep = () => {
@@ -267,6 +273,44 @@ export default function WorkshopViewer({ workshop, onComplete }: Props) {
                 {currentStep.description}
               </ReactMarkdown>
             </div>
+
+            {/* Main Step Image */}
+            {currentStep.mainImage && (
+              <div className="mb-4">
+                <figure className="relative">
+                  <img
+                    src={currentStep.mainImage.url}
+                    alt={currentStep.mainImage.altText || "Step illustration"}
+                    className="rounded-lg max-h-96 w-full object-contain bg-base-200"
+                  />
+                  {currentStep.mainImage.caption && (
+                    <figcaption className="text-center mt-2 text-base-content/70">
+                      {currentStep.mainImage.caption}
+                    </figcaption>
+                  )}
+                </figure>
+              </div>
+            )}
+
+            {/* Additional Step Images */}
+            {currentStep.images && currentStep.images.length > 0 && (
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {currentStep.images.map((image, index) => (
+                  <figure key={index} className="relative">
+                    <img
+                      src={image.url}
+                      alt={image.altText || `Additional image ${index + 1}`}
+                      className="rounded-lg w-full h-48 object-cover bg-base-200"
+                    />
+                    {image.caption && (
+                      <figcaption className="text-center mt-2 text-base-content/70">
+                        {image.caption}
+                      </figcaption>
+                    )}
+                  </figure>
+                ))}
+              </div>
+            )}
 
             <div className="flex gap-4">
               <div className="flex-1 h-[60vh] border rounded-lg overflow-hidden">
@@ -489,6 +533,24 @@ export default function WorkshopViewer({ workshop, onComplete }: Props) {
                         <div className="text-sm font-medium text-primary mb-2">
                           Lines: {desc.lines.join(", ")}
                         </div>
+                        {/* Line Description Image */}
+                        {desc.image && (
+                          <figure className="mb-2">
+                            <img
+                              src={desc.image.url}
+                              alt={
+                                desc.image.altText ||
+                                "Line description illustration"
+                              }
+                              className="rounded-lg w-full h-32 object-contain bg-base-200"
+                            />
+                            {desc.image.caption && (
+                              <figcaption className="text-center mt-1 text-sm text-base-content/70">
+                                {desc.image.caption}
+                              </figcaption>
+                            )}
+                          </figure>
+                        )}
                         <div className="prose prose-sm max-w-none">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {desc.content}

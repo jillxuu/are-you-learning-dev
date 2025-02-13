@@ -1,10 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "build/server.js",
   "scripts": {
+    "format": "prettier --write .",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "NODE_ENV=production node ./build/server.js",
     "dev": "nodemon --exec ts-node src/server.ts"
   },
   "keywords": [],
@@ -12,19 +13,27 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@aptos-labs/ts-sdk": ">=1.30.0",
-    "toml": "^3.0.0",
+    "prettier": "^3.3.3",
+    "@aptos-labs/ts-sdk": ">=1.35.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.5",
+    "toml": "^3.0.0",
+    "tree-kill": "^1.2.2",
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.0",
     "@types/morgan": "^1.9.9",
+    "@types/multer": "^1.4.12",
     "@types/node": "^22.13.2",
+    "@types/sharp": "^0.31.1",
+    "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"

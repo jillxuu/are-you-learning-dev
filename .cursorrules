@@ -86,6 +86,31 @@ The goal is to help you maintain a big picture as well as the progress of the ta
 - Prioritize functional correctness over TypeScript type perfection when dealing with SDK module differences
 - Keep track of which SDK functions use ESM vs CommonJS types to handle type assertions appropriately
 
+## Docker Lessons
+
+- Use multi-stage builds with clear stage names (e.g. alpine, base, pruner, builder, runner) for better organization
+- Use Alpine-based images when possible for smaller image size (node:20-alpine instead of node:18-slim)
+- Add libc6-compat in Alpine images to ensure compatibility with native modules
+- Create a dedicated non-root user with specific UID/GID for better security
+- Use --system flag when creating users/groups in Docker to avoid UID conflicts
+- Use --chown in COPY commands to set proper file ownership
+- Keep build tools (like turbo, pnpm) in separate stages from the final image
+- Use workspace pruning tools (like turbo prune) in monorepos to minimize build context
+- Install dependencies before copying source code to leverage Docker layer caching
+- Use --frozen-lockfile or equivalent to ensure reproducible builds
+- Set NODE_ENV=production in the final stage
+- Use ENTRYPOINT instead of CMD when the container has a single purpose
+- Keep migrations and other runtime-required files separate from build artifacts
+- Use explicit workdir changes (WORKDIR) when switching contexts
+- Set environment variables that affect runtime behavior in the final stage only
+- Use corepack for package manager version consistency
+- Consider using pnpm instead of npm for better dependency management and disk space usage
+- Use proper permission flags (--system, --no-cache) in package installation commands
+- Keep the final image as minimal as possible by only copying necessary files from builder
+- When dealing with complex dependencies like @aptos-labs/ts-sdk, use `npm install --production=false && npm prune --production` instead of `npm install --omit=dev` to ensure all required dependencies are included
+- When using SDKs that have runtime dependencies marked as devDependencies (like tree-kill in @aptos-labs/ts-sdk), add those dependencies directly to your project's dependencies
+- Use tini or similar init system in Docker containers to properly handle process signals and zombie processes
+
 # Scratchpad
 
 ## Project: Interactive Aptos dApp Learning Platform
