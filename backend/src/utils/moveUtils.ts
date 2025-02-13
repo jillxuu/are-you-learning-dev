@@ -47,7 +47,7 @@ export const publishMovePackageTask = async (args: {
     extraArguments: [
       "--assume-yes",
       `--private-key=${publisher.privateKey}`,
-      `--url=${process.env.VITE_APTOS_NODE_URL || "https://fullnode.devnet.aptoslabs.com"}`,
+      `--url=${process.env.APTOS_NODE_URL || "https://fullnode.devnet.aptoslabs.com"}`,
     ],
     showStdout: true,
   });

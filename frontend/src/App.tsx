@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Routes,
   Route,
@@ -33,6 +33,8 @@ const THEMES = [
 
 function App() {
   const [theme, setTheme] = useState("synthwave");
+  const [packageName, setPackageName] = useState("meme_factory"); // TODO: make this configurable
+  const [moduleName, setModuleName] = useState("meme_coin"); // TODO: make this configurable
   const [code, setCode] = useState("");
   const [originalCode, setOriginalCode] = useState("");
   const [cleanCode, setCleanCode] = useState("");
@@ -49,7 +51,7 @@ function App() {
 
   // Load Move code when component mounts
   useEffect(() => {
-    fetch("/api/code/meme_coin.move")
+    fetch(`/api/code/${moduleName}.move`)
       .then((response) => response.text())
       .then((moveCode) => {
         setCode(moveCode);
@@ -86,11 +88,12 @@ function App() {
     }
 
     try {
-      // Create account to get address
-      const account = new Ed25519Account({
-        privateKey: new Ed25519PrivateKey(privateKey),
-      });
-      const address = account.accountAddress.toString();
+      const accountAddress = useMemo(() => {
+        const account = new Ed25519Account({
+          privateKey: new Ed25519PrivateKey(privateKey),
+        });
+        return account.accountAddress.toString();
+      }, [privateKey]);
 
       // First compile
       const compileResponse = await fetch("/api/compile", {
@@ -99,8 +102,8 @@ function App() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          packageName: "meme_factory",
-          address,
+          packageName,
+          address: accountAddress,
         }),
       });
 
@@ -126,20 +129,14 @@ function App() {
     handleCheckCode();
   };
 
-  const handleDeploy = async (address: string, networkStr: string) => {
+  const handleDeploy = async (address: string, networkStr: Network) => {
     setShowDeployment(false);
     setPrivateKey(null);
-    const network =
-      networkStr === "mainnet"
-        ? Network.MAINNET
-        : networkStr === "testnet"
-          ? Network.TESTNET
-          : Network.DEVNET;
     const formattedAddress = AccountAddress.from(address).toString();
-    setDeployedContract({ address: formattedAddress, network });
+    setDeployedContract({ address: formattedAddress, network: networkStr });
     // Navigate to modules page after successful deployment
     navigate(`/modules/${formattedAddress}/code`, {
-      state: { network, address: formattedAddress },
+      state: { network: networkStr, address: formattedAddress },
     });
   };
 
@@ -236,6 +233,7 @@ function App() {
                 {showDeployment && privateKey && (
                   <ContractDeployment
                     onDeploy={handleDeploy}
+                    packageName={packageName}
                     onCancel={() => {
                       setShowDeployment(false);
                       setPrivateKey(null);

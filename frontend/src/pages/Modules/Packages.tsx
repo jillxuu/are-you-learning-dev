@@ -48,10 +48,10 @@ interface PackageContentProps {
 interface Props {
   address: string;
   network: Network;
-  moduleName: string;
+  packageName: string;
 }
 
-export default function Packages({ address, network, moduleName }: Props) {
+export default function Packages({ address, network, packageName }: Props) {
   const navigate = useNavigate();
   const selectedPackageName = useParams().selectedModuleName ?? "";
   const [packages, setPackages] = useState<PackageMetadata[]>([]);
@@ -77,7 +77,7 @@ export default function Packages({ address, network, moduleName }: Props) {
 
         // Transform modules into package format
         const packageMetadata: PackageMetadata = {
-          name: "meme_coin",
+          name: packageName,
           modules: modules.map((module) => ({
             name: module.abi?.name || "",
             source: module.bytecode || "",
@@ -186,17 +186,6 @@ function PackagesSidebar({
   selectedPackageName,
   navigateToPackage,
 }: PackageSidebarProps) {
-  const flattedModules = useMemo(
-    () =>
-      sortedPackages.flatMap((pkg) =>
-        pkg.modules.map((module: ModuleMetadata) => ({
-          ...module,
-          pkg: pkg.name,
-        })),
-      ),
-    [sortedPackages],
-  );
-
   return (
     <div className="bg-base-200 p-6 rounded-lg">
       <div className="space-y-3">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPlatformAdminApiClient } from "@aptos-internal/aptos-shepherd-platform-client";
-import { SHEPHERD_API_URL, getHeaders } from "../config";
+import { SHEPHERD_API_URL, getHeaders } from "../utils/shepherdConfig";
 import type {
   GetSpecs,
   InstanceStatus,

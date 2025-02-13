@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Network, AptosConfig } from "@aptos-labs/ts-sdk";
+import { useState, useEffect } from "react";
+import { Network } from "@aptos-labs/ts-sdk";
 import { useContract } from "../hooks/useContract";
 
 interface Props {
@@ -16,22 +16,6 @@ interface FunctionInfo {
   return: string[];
 }
 
-interface ModuleFunction {
-  name: string;
-  visibility: string;
-  is_entry: boolean;
-  generic_type_params: any[];
-  params: string[];
-  return: string[];
-}
-
-interface ModuleInfo {
-  abi?: {
-    name: string;
-    exposed_functions: ModuleFunction[];
-  };
-}
-
 export default function ContractExplorer({
   contractAddress: initialAddress,
   network = Network.DEVNET,
@@ -44,8 +28,7 @@ export default function ContractExplorer({
   const [functions, setFunctions] = useState<{ [key: string]: FunctionInfo }>(
     {},
   );
-  const [moduleName, setModuleName] = useState("meme_coin");
-  const [moduleInfo, setModuleInfo] = useState<ModuleInfo | null>(null);
+  const [moduleName, setModuleName] = useState("");
 
   const { loading, error, callViewFunction, callFunction, getModule } =
     useContract({
@@ -59,40 +42,6 @@ export default function ContractExplorer({
       setAddress(initialAddress);
     }
   }, [initialAddress]);
-
-  // Fetch module info when address changes
-  useEffect(() => {
-    if (address) {
-      loadModuleInfo();
-    }
-  }, [address, moduleName]);
-
-  const loadModuleInfo = async () => {
-    try {
-      const moduleInfo = await getModule();
-      setModuleInfo(moduleInfo);
-      if (moduleInfo.abi) {
-        // Extract functions from module ABI
-        const exposedFunctions = moduleInfo.abi.exposed_functions.reduce(
-          (acc: { [key: string]: FunctionInfo }, func: ModuleFunction) => {
-            acc[func.name] = {
-              name: func.name,
-              visibility: func.visibility,
-              isEntry: func.is_entry,
-              genericTypeParams: func.generic_type_params,
-              params: func.params,
-              return: func.return,
-            };
-            return acc;
-          },
-          {},
-        );
-        setFunctions(exposedFunctions);
-      }
-    } catch (err) {
-      console.error("Failed to load module info:", err);
-    }
-  };
 
   const handleFunctionSelect = (funcName: string) => {
     setSelectedFunction(funcName);

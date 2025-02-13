@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import { Network } from "@aptos-labs/ts-sdk";
+import { useState } from "react";
 
 interface Props {
-  onDeploy: (address: string, network: string) => void;
+  onDeploy: (address: string, network: Network) => void;
   onCancel: () => void;
   currentCode: string;
   packageName: string;
@@ -18,7 +19,6 @@ interface DeploymentStatus {
 export default function ContractDeployment({
   onDeploy,
   onCancel,
-  currentCode,
   packageName,
   privateKey,
 }: Props) {
@@ -26,9 +26,7 @@ export default function ContractDeployment({
     isCompiling: false,
     isDeploying: false,
   });
-  const [nodeUrl, setNodeUrl] = useState(
-    process.env.VITE_APTOS_NODE_URL || "https://fullnode.devnet.aptoslabs.com",
-  );
+  const [nodeUrl, setNodeUrl] = useState(import.meta.env.VITE_APTOS_NODE_URL);
 
   const handleDeploy = async () => {
     try {
@@ -60,14 +58,7 @@ export default function ContractDeployment({
         address: deployResult.address,
       });
 
-      // Get network name from URL
-      const network = nodeUrl.includes("devnet")
-        ? "devnet"
-        : nodeUrl.includes("testnet")
-          ? "testnet"
-          : "mainnet";
-
-      onDeploy(deployResult.address, network);
+      onDeploy(deployResult.address, import.meta.env.VITE_NETWORK);
     } catch (error) {
       setStatus({
         isCompiling: false,

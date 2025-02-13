@@ -18,7 +18,6 @@ interface OpenAIResponse {
 }
 
 const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
-const CACHE_KEY_PREFIX = "meme_coin_explanations_";
 
 function getCacheKey(code: string): string {
   // Create a simple hash of the code to use as the cache key
@@ -28,7 +27,7 @@ function getCacheKey(code: string): string {
     hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
-  return CACHE_KEY_PREFIX + hash;
+  return hash.toString();
 }
 
 function getFromCache(code: string): ComponentExplanation[] | null {
